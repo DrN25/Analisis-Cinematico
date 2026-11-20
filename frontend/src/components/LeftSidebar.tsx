@@ -239,6 +239,10 @@ export const LeftSidebar: React.FC<Props> = ({
                 <span>Limpiar carga</span>
               </button>
             </div>
+            <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono px-0.5">
+              <span>Límite: máx. 80 KB</span>
+              <span>CSV, TXT, XLSX</span>
+            </div>
 
             {tiposDisponibles.length > 0 && (
               <div className="pt-1 border-t border-slate-100">

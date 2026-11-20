@@ -275,6 +275,13 @@ export default function App() {
   }, [vista, opciones, analisis?.analysis_id]);
 
   const handleUploadFile = async (file: File) => {
+    const MAX_FILE_SIZE_BYTES = 80 * 1024; // 80 KB
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setErrorMsg(
+        `El archivo «${file.name}» excede el límite máximo permitido de 80 KB (pesa ${(file.size / 1024).toFixed(1)} KB). Por favor sube un archivo más liviano.`,
+      );
+      return;
+    }
     setUploading(true);
     setErrorMsg(null);
     try {
@@ -293,7 +300,9 @@ export default function App() {
       await runAnalysis(parsed.rows, resetFiltro);
       const descTxt =
         parsed.descartadas.length > 0 ? ` (${parsed.descartadas.length} descartadas)` : '';
-      notify(`Archivo cargado: ${parsed.filename} · ${parsed.rows.length} datos${descTxt}`);
+      notify(
+        `Archivo cargado: ${parsed.filename} (${(file.size / 1024).toFixed(1)} KB) · ${parsed.rows.length} datos${descTxt}`,
+      );
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'No se pudo leer el archivo.');
     } finally {

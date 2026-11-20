@@ -58,7 +58,7 @@ from app.deps import get_current_user  # noqa: E402
 
 router = APIRouter()
 
-MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+MAX_UPLOAD_BYTES = 80 * 1024  # Límite estricto de 80 KB por archivo
 CACHE_MAX_ITEMS = 12
 CACHE_TTL_SECONDS = 1800
 
@@ -173,7 +173,10 @@ async def parse_archivo(
     """Lee un CSV/TXT/Excel subido, normaliza columnas y reporta filas válidas y descartadas."""
     raw = await file.read()
     if len(raw) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="El archivo supera el límite de 25 MB.")
+        raise HTTPException(
+            status_code=413,
+            detail=f"El archivo supera el límite de 80 KB (pesa {len(raw) / 1024:.1f} KB).",
+        )
     if not raw:
         raise HTTPException(status_code=400, detail="El archivo está vacío.")
     fname = file.filename or "archivo.csv"
