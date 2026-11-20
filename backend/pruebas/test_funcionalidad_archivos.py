@@ -256,7 +256,7 @@ def test_funcionalidad_completa_archivos(api_env):
     # CASO 4: Validación estricta del límite de 80 KB
     # =========================================================================
     print("\n--- CASO 4: Validación de límite de tamaño (80 KB) ---")
-    pesado_bytes = b"ID,Buz,DirBuz\n" + b"1,50,180\n" * 9000  # ~90 KB
+    pesado_bytes = b"ID,Buz,DirBuz\n" + b"1,50,180\n" * 10000  # ~90 KB
     assert len(pesado_bytes) > 80 * 1024
     res_pesado = client.post(
         "/api/analisis/parse-archivo",

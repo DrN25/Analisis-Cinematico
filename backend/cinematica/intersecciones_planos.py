@@ -14,9 +14,13 @@ def calcular_intersecciones(datos, ang_min=0.0):
     ok = (ang > 1e-6) & (ang >= ang_min)   # planos idénticos no tienen intersección (Dips también los omite)
     i, j, c = i[ok], j[ok], c[ok]
     trend, plunge = linea_desde_vector(c) if len(c) else (np.array([]), np.array([]))
-    ids = datos["ID"].to_numpy()
+    ids = datos["ID"].astype(str).to_numpy()
     b, d = datos["Buz"].to_numpy(float), datos["DirBuz"].to_numpy(float)
-    tipo = datos["Tipo"].to_numpy() if "Tipo" in datos else np.full(len(datos), "Sin tipo")
+    tipo = (
+        datos["Tipo"].fillna("Sin tipo").astype(str).to_numpy()
+        if "Tipo" in datos
+        else np.full(len(datos), "Sin tipo")
+    )
     pers = datos["Persistencia"].to_numpy(float) if "Persistencia" in datos else np.full(len(datos), np.nan)
     unique_ids = pd.unique(ids)
     unique_tipos = pd.unique(tipo)

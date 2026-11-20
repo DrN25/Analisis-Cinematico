@@ -109,7 +109,9 @@ def capa_intersecciones(ax, op, r, mascaras=()):
         puntos(ax, op, r.Trend[m], r.Plunge[m], color, mk, 0.6 * f * tamanos(clases[m], op), z=4 + len(mascaras) - k,
                ec=borde)
     sel = seleccion(op.etiquetas_intersecciones, ~resto)
-    etiquetar(ax, op, r.Trend[sel], r.Plunge[sel], r.Plano_1[sel] + "×" + r.Plano_2[sel])
+    if np.any(sel) and np.sum(sel) <= MAX_ETIQUETAS:
+        etiquetas = r.Plano_1[sel].astype(str) + "×" + r.Plano_2[sel].astype(str)
+        etiquetar(ax, op, r.Trend[sel], r.Plunge[sel], etiquetas)
 
 
 def en_pares(tabla, r, mascara):
