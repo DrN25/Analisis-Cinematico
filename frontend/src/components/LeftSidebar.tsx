@@ -9,6 +9,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import { HelpTooltip } from './HelpTooltip';
 import {
   DipsParams,
   FiltroParams,
@@ -172,7 +173,10 @@ export const LeftSidebar: React.FC<Props> = ({
         {/* 1 · Datos de entrada */}
         <TreeGroup title="1 · Datos de entrada" defaultOpen={true}>
           <div className="space-y-2">
-            <span className={labelCls}>Archivo CSV o Excel</span>
+            <div className="flex items-center gap-1">
+              <span className={labelCls}>Archivo CSV o Excel</span>
+              <HelpTooltip text="Columnas: Buz, DirBuz, Tipo, Persistencia (también Dip, Dip Direction, Type…). Solo Buz y DirBuz son obligatorias. La fila de encabezados puede no ser la primera." />
+            </div>
 
             {totalRows > 0 ? (
               <div className="bg-emerald-50/70 border border-emerald-200 rounded p-2 text-xs">
@@ -258,8 +262,9 @@ export const LeftSidebar: React.FC<Props> = ({
             )}
 
             <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
-              <label className="text-xs text-slate-700 font-medium truncate">
-                Persistencia mínima (m)
+              <label className="text-xs text-slate-700 font-medium truncate flex items-center gap-1">
+                <span>Persistencia mínima (m)</span>
+                <HelpTooltip text="Se excluyen las estructuras más cortas. 0 = sin filtro." />
               </label>
               <input
                 type="number"
@@ -286,7 +291,10 @@ export const LeftSidebar: React.FC<Props> = ({
 
           <div>
             <div className="flex items-center justify-between mb-0.5">
-              <label className={labelCls}>Tamaño de los polos</label>
+              <label className={`${labelCls} flex items-center gap-1`}>
+                <span>Tamaño de los polos</span>
+                <HelpTooltip text="Tamaño base del símbolo de los polos. Con «Tamaño por persistencia» se multiplica por la clase de persistencia (ISRM)." />
+              </label>
               <span className="font-mono text-xs text-[#881337] font-semibold">
                 {opciones.tamano_polo ?? 10}
               </span>
@@ -348,10 +356,10 @@ export const LeftSidebar: React.FC<Props> = ({
           {/* Color de los contornos: Azules, Verdes, Morados, Grises */}
           <div className="min-w-0">
             <div className="flex items-center justify-between">
-              <label className={labelCls}>Color de los contornos</label>
-              <span className="text-[10px] text-slate-400" title="Paleta de los contornos de densidad de polos en todas las vistas; distinta del rojo y naranja de las zonas críticas.">
-                ⓘ
-              </span>
+              <label className={`${labelCls} flex items-center gap-1`}>
+                <span>Color de los contornos</span>
+                <HelpTooltip text="Paleta de los contornos de densidad de polos en todas las vistas; distinta del rojo y naranja de las zonas críticas." />
+              </label>
             </div>
             <select
               value={opciones.mapa_color_mecanismos ?? 'Blues'}
@@ -371,55 +379,67 @@ export const LeftSidebar: React.FC<Props> = ({
           </div>
 
           <div className="space-y-1.5 pt-1 border-t border-slate-100">
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.contornos_en_mecanismos ?? true}
-                onChange={(e) =>
-                  onChangeOpciones({
-                    ...opciones,
-                    contornos_general: e.target.checked,
-                    contornos_en_mecanismos: e.target.checked,
-                  })
-                }
-                className="accent-[#881337] rounded"
-              />
-              <span>Contornos de densidad</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={opciones.contornos_en_mecanismos ?? true}
+                  onChange={(e) =>
+                    onChangeOpciones({
+                      ...opciones,
+                      contornos_general: e.target.checked,
+                      contornos_en_mecanismos: e.target.checked,
+                    })
+                  }
+                  className="accent-[#881337] rounded"
+                />
+                <span>Contornos de densidad</span>
+              </label>
+              <HelpTooltip text="Contornos de densidad de polos en todas las vistas." />
+            </div>
 
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.tamano_por_persistencia ?? true}
-                onChange={(e) => setOpt('tamano_por_persistencia', e.target.checked)}
-                className="accent-[#881337] rounded"
-              />
-              <span>Tamaño por persistencia</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={opciones.tamano_por_persistencia ?? true}
+                  onChange={(e) => setOpt('tamano_por_persistencia', e.target.checked)}
+                  className="accent-[#881337] rounded"
+                />
+                <span>Tamaño por persistencia</span>
+              </label>
+              <HelpTooltip text="Multiplica el tamaño base del símbolo por la clase de persistencia (ISRM)." />
+            </div>
 
-            <label
-              className={`flex items-center gap-1.5 text-xs ${
-                totalRows > 0 && totalRows < 50
-                  ? 'text-slate-700 cursor-pointer'
-                  : 'text-slate-400 cursor-not-allowed'
-              }`}
-              title={
-                totalRows > 0 && totalRows < 50
-                  ? 'Muestra el ID junto a cada polo'
-                  : `Disponible con menos de 50 polos (hay ${totalRows})`
-              }
-            >
-              <input
-                type="checkbox"
-                disabled={totalRows <= 0 || totalRows >= 50}
-                checked={opciones.etiquetas_polos === 'todos' && totalRows > 0 && totalRows < 50}
-                onChange={(e) =>
-                  setOpt('etiquetas_polos', e.target.checked ? 'todos' : 'ninguno')
+            <div className="flex items-center justify-between">
+              <label
+                className={`flex items-center gap-1.5 text-xs ${
+                  totalRows > 0 && totalRows < 50
+                    ? 'text-slate-700 cursor-pointer'
+                    : 'text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  disabled={totalRows <= 0 || totalRows >= 50}
+                  checked={opciones.etiquetas_polos === 'todos' && totalRows > 0 && totalRows < 50}
+                  onChange={(e) =>
+                    setOpt('etiquetas_polos', e.target.checked ? 'todos' : 'ninguno')
+                  }
+                  className="accent-[#881337] rounded"
+                />
+                <span>Etiquetas de los polos (ID)</span>
+              </label>
+              <HelpTooltip
+                text={
+                  totalRows > 0 && totalRows < 50
+                    ? 'Muestra el ID junto a cada polo.'
+                    : `Muestra el ID junto a cada polo. Disponible con menos de 50 polos${
+                        totalRows > 0 ? ` (hay ${totalRows})` : ''
+                      }.`
                 }
-                className="accent-[#881337] rounded"
               />
-              <span>Etiquetas de los polos (ID)</span>
-            </label>
+            </div>
           </div>
         </TreeGroup>
 
@@ -444,7 +464,10 @@ export const LeftSidebar: React.FC<Props> = ({
             </div>
             <div className="grid grid-cols-2 gap-2 min-w-0">
               <div className="min-w-0">
-                <label className={labelCls}>Buzamiento ψs (°)</label>
+                <label className={`${labelCls} flex items-center gap-1`}>
+                  <span>Buzamiento ψs (°)</span>
+                  <HelpTooltip text="Inclinación del plano del talud respecto a la horizontal (1° a 90°)." />
+                </label>
                 <input
                   type="number"
                   min={1}
@@ -461,7 +484,10 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
               </div>
               <div className="min-w-0">
-                <label className={labelCls}>Dir. buzamiento αs (°)</label>
+                <label className={`${labelCls} flex items-center gap-1`}>
+                  <span>Dir. buzamiento αs (°)</span>
+                  <HelpTooltip text="Dirección azimutal de buzamiento del talud respecto al Norte (0° a 359.9°)." />
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -484,7 +510,10 @@ export const LeftSidebar: React.FC<Props> = ({
           <TreeGroup title="4 · Parámetros del análisis" defaultOpen={true}>
             <div className="grid grid-cols-2 gap-2 min-w-0">
               <div className="min-w-0">
-                <label className={labelCls}>Ángulo de fricción φ (°)</label>
+                <label className={`${labelCls} flex items-center gap-1`}>
+                  <span>Ángulo de fricción φ (°)</span>
+                  <HelpTooltip text="Ángulo de fricción interna del macizo rocoso para el cono de fricción (0° a 89°)." />
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -520,7 +549,10 @@ export const LeftSidebar: React.FC<Props> = ({
 
             <div className="grid grid-cols-3 gap-1.5 min-w-0">
               <div className="min-w-0">
-                <label className={labelCls}>LL planar ±°</label>
+                <label className={`${labelCls} flex items-center gap-1`}>
+                  <span>LL planar ±°</span>
+                  <HelpTooltip text="Límite lateral angular para rotura planar (±° respecto a la dirección del talud)." />
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -533,7 +565,10 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
               </div>
               <div className="min-w-0">
-                <label className={labelCls}>LL flexural ±°</label>
+                <label className={`${labelCls} flex items-center gap-1`}>
+                  <span>LL flexural ±°</span>
+                  <HelpTooltip text="Límite lateral angular para toppling flexural (±°)." />
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -546,7 +581,10 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
               </div>
               <div className="min-w-0">
-                <label className={labelCls}>LL directo ±°</label>
+                <label className={`${labelCls} flex items-center gap-1`}>
+                  <span>LL directo ±°</span>
+                  <HelpTooltip text="Límite lateral angular para toppling directo (±°)." />
+                </label>
                 <input
                   type="number"
                   min={0}
@@ -626,9 +664,13 @@ export const LeftSidebar: React.FC<Props> = ({
         {/* 5 · Criterio del resumen */}
         <TreeGroup title="5 · Criterio del resumen" defaultOpen={true}>
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-[10.5px] font-semibold text-slate-700 uppercase tracking-tight leading-tight">
-                Porcentaje crítico de discontinuidades
+            <div className="flex items-center justify-between gap-1">
+              <label className="text-[10.5px] font-semibold text-slate-700 uppercase tracking-tight leading-tight flex items-center gap-1">
+                <span>Porcentaje crítico de discontinuidades</span>
+                <HelpTooltip
+                  text="Un mecanismo es «SÍ» cuando su % crítico es mayor a este valor, que fija el ingeniero. Con 0 % basta un elemento crítico."
+                  align="left"
+                />
               </label>
               <span className="font-mono font-bold text-xs text-[#881337] whitespace-nowrap shrink-0 px-1.5 py-0.5 bg-rose-50 border border-rose-200 rounded">
                 {umbral}%

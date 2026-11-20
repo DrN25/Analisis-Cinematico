@@ -25,6 +25,7 @@ import { AdminModal } from './components/AdminModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { DataEditorModal } from './components/DataEditorModal';
 import { HelpModal } from './components/HelpModal';
+import { HelpTooltip } from './components/HelpTooltip';
 import { LeftSidebar } from './components/LeftSidebar';
 import { LoginView } from './components/LoginView';
 import { RightInspector, TablaExportKey } from './components/RightInspector';
@@ -665,7 +666,7 @@ export default function App() {
                 <div className="grid grid-cols-3 gap-1.5">
                   <div>
                     <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
-                      Borde
+                      <span>Borde</span> <HelpTooltip text="Grosor del círculo exterior" />
                     </label>
                     <input
                       type="number"
@@ -681,7 +682,7 @@ export default function App() {
                   </div>
                   <div>
                     <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
-                      Interno
+                      <span>Interno</span> <HelpTooltip text="Grosor de las líneas internas" />
                     </label>
                     <input
                       type="number"
@@ -697,7 +698,7 @@ export default function App() {
                   </div>
                   <div>
                     <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
-                      Grosor red
+                      <span>Red</span> <HelpTooltip text="Grosor de la red" />
                     </label>
                     <input
                       type="number"
@@ -1143,11 +1144,28 @@ export default function App() {
                 </div>
               )}
               {figuraSrc ? (
-                <img
-                  src={figuraSrc}
-                  alt={`Estereograma ${vista}`}
-                  className="max-w-full max-h-[56vh] object-contain select-none"
-                />
+                <div className="flex flex-col items-center w-full my-auto">
+                  <img
+                    src={figuraSrc}
+                    alt={`Estereograma ${vista}`}
+                    className="max-w-full max-h-[56vh] object-contain select-none"
+                  />
+                  {analisis && (
+                    <div className="w-full max-w-2xl mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 shadow-2xs text-left select-text">
+                      <div className="font-semibold text-slate-800 mb-1 text-xs tracking-tight">
+                        Notas de los resultados
+                      </div>
+                      <ol className="list-decimal pl-4 space-y-1 text-slate-600 text-[11px] leading-relaxed">
+                        <li>
+                          El porcentaje crítico de discontinuidades corresponde a la fracción de polos o intersecciones que están dentro de la zona crítica. No corresponde a un factor de seguridad ni a una probabilidad de falla del mecanismo de rotura.
+                        </li>
+                        <li>
+                          En rotura planar y en cuña no se considera un plano igual al talud de análisis, debido a que no puede producir rotura planar ni formar cuñas críticas, porque no aflora y sus intersecciones generan bloques de volumen cero.
+                        </li>
+                      </ol>
+                    </div>
+                  )}
+                </div>
               ) : rows.length === 0 ? (
                 <div className="text-center p-6 max-w-md select-none">
                   <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
