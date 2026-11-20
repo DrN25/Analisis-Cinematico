@@ -115,9 +115,11 @@ export interface OpcionesPlot {
   simbolo_por_tipo: boolean;
   tamano_por_persistencia: boolean;
   tamano_simbolo: number;
+  tamano_polo: number;
   contornos_general: boolean;
   contornos_en_mecanismos: boolean;
   mapa_color: string;
+  mapa_color_mecanismos: 'Blues' | 'Greens' | 'Purples' | 'Greys';
   titulo: boolean;
   caja_info: boolean;
   mostrar_proyeccion: boolean;
@@ -155,9 +157,11 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
   simbolo_por_tipo: true,
   tamano_por_persistencia: true,
   tamano_simbolo: 30,
+  tamano_polo: 10,
   contornos_general: true,
   contornos_en_mecanismos: true,
   mapa_color: 'YlOrRd',
+  mapa_color_mecanismos: 'Blues',
   titulo: true,
   caja_info: true,
   mostrar_proyeccion: true,
@@ -169,7 +173,7 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
 };
 
 export interface VeredictoMecanismo {
-  clave: 'planar' | 'cuna' | 'flexural' | 'directo';
+  clave: 'planar' | 'cuna' | 'flexural' | 'directo' | 'oblicuo';
   nombre: string;
   porcentaje: number;
   criticos: number;
@@ -196,6 +200,7 @@ export interface AnalisisResponse {
   analysis_id: string;
   contexto: AnalisisContexto;
   veredictos: VeredictoMecanismo[];
+  oblicuo?: VeredictoMecanismo;
   tablas: {
     resumen_porcentajes: TableRow[];
     criticos_por_tipo: TableRow[];

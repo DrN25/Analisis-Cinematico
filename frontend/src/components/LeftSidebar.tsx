@@ -122,16 +122,6 @@ export const LeftSidebar: React.FC<Props> = ({
     onChangeOpciones({ ...opciones, [key]: val });
   };
 
-  const toggleElemento = (elem: 'polos' | 'planos' | 'intersecciones') => {
-    const base = opciones.mostrar ?? ['polos'];
-    const set = new Set(base);
-    if (set.has(elem)) {
-      if (set.size > 1) set.delete(elem);
-    } else {
-      set.add(elem);
-    }
-    setOpt('mostrar', Array.from(set));
-  };
 
   if (collapsed) {
     return (
@@ -297,194 +287,144 @@ export const LeftSidebar: React.FC<Props> = ({
         {/* 2 · Opciones del estereograma */}
         <TreeGroup title="2 · Opciones del estereograma" defaultOpen={true}>
           <p className="text-[10.5px] text-slate-500 italic pb-0.5">
-            Solo cambian el dibujo; no recalculan el análisis.
+            Solo cambian el dibujo; no recalculan el análisis. Más opciones en el menú superior.
           </p>
 
           <div>
             <div className="flex items-center justify-between mb-0.5">
               <label className={labelCls}>Tamaño de los polos</label>
-              <span className="font-mono text-xs text-slate-600">
-                {opciones.tamano_simbolo ?? 30}
+              <span className="font-mono text-xs text-[#881337] font-semibold">
+                {opciones.tamano_polo ?? 10}
               </span>
             </div>
             <input
               type="range"
-              min={10}
+              min={2}
               max={60}
-              step={2}
-              value={opciones.tamano_simbolo ?? 30}
-              onChange={(e) => setOpt('tamano_simbolo', Number(e.target.value))}
-              className="w-full accent-[#881337] h-1.5"
+              step={1}
+              value={opciones.tamano_polo ?? 10}
+              onChange={(e) => setOpt('tamano_polo', Number(e.target.value))}
+              className="w-full accent-[#881337] h-1.5 cursor-pointer"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>Proyección</label>
-              <select
-                value={opciones.proyeccion}
-                onChange={(e) =>
-                  setOpt('proyeccion', e.target.value as 'equiarea' | 'equiangulo')
-                }
-                className={selectCls}
-              >
-                <option value="equiarea">Schmidt (Equiárea)</option>
-                <option value="equiangulo">Wulff (Equiángulo)</option>
-              </select>
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Hemisferio</label>
-              <select
-                value={opciones.hemisferio}
-                onChange={(e) =>
-                  setOpt('hemisferio', e.target.value as 'inferior' | 'superior')
-                }
-                className={selectCls}
-              >
-                <option value="inferior">Inferior</option>
-                <option value="superior">Superior</option>
-              </select>
-            </div>
+          <div className="min-w-0">
+            <label className={labelCls}>Proyección</label>
+            <select
+              value={opciones.proyeccion}
+              onChange={(e) =>
+                setOpt('proyeccion', e.target.value as 'equiarea' | 'equiangulo')
+              }
+              className={selectCls}
+            >
+              <option value="equiarea">Equiárea (Schmidt)</option>
+              <option value="equiangulo">Equiángulo (Wulff)</option>
+            </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>Red</label>
-              <select
-                value={opciones.red}
+          <div className="min-w-0">
+            <label className={labelCls}>Hemisferio</label>
+            <select
+              value={opciones.hemisferio}
+              onChange={(e) =>
+                setOpt('hemisferio', e.target.value as 'inferior' | 'superior')
+              }
+              className={selectCls}
+            >
+              <option value="inferior">Inferior</option>
+              <option value="superior">Superior</option>
+            </select>
+          </div>
+
+          <div className="min-w-0">
+            <label className={labelCls}>Red</label>
+            <select
+              value={opciones.red}
+              onChange={(e) =>
+                setOpt('red', e.target.value as 'polar' | 'ecuatorial' | 'ninguna')
+              }
+              className={selectCls}
+            >
+              <option value="ecuatorial">Ecuatorial</option>
+              <option value="polar">Polar</option>
+              <option value="ninguna">Ninguna</option>
+            </select>
+          </div>
+
+          {/* Color de los contornos: Azules, Verdes, Morados, Grises */}
+          <div className="min-w-0">
+            <div className="flex items-center justify-between">
+              <label className={labelCls}>Color de los contornos</label>
+              <span className="text-[10px] text-slate-400" title="Paleta de los contornos de densidad de polos en todas las vistas; distinta del rojo y naranja de las zonas críticas.">
+                ⓘ
+              </span>
+            </div>
+            <select
+              value={opciones.mapa_color_mecanismos ?? 'Blues'}
+              onChange={(e) =>
+                setOpt(
+                  'mapa_color_mecanismos',
+                  e.target.value as 'Blues' | 'Greens' | 'Purples' | 'Greys',
+                )
+              }
+              className={selectCls}
+            >
+              <option value="Blues">Azules</option>
+              <option value="Greens">Verdes</option>
+              <option value="Purples">Morados</option>
+              <option value="Greys">Grises</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5 pt-1 border-t border-slate-100">
+            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={opciones.contornos_en_mecanismos ?? true}
                 onChange={(e) =>
-                  setOpt('red', e.target.value as 'polar' | 'ecuatorial' | 'ninguna')
+                  onChangeOpciones({
+                    ...opciones,
+                    contornos_general: e.target.checked,
+                    contornos_en_mecanismos: e.target.checked,
+                  })
                 }
-                className={selectCls}
-              >
-                <option value="ecuatorial">Ecuatorial</option>
-                <option value="polar">Polar</option>
-                <option value="ninguna">Ninguna</option>
-              </select>
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Espaciado marcas</label>
-              <select
-                value={opciones.espaciado_marcas}
-                onChange={(e) => setOpt('espaciado_marcas', Number(e.target.value))}
-                className={selectCls}
-              >
-                <option value={5}>5°</option>
-                <option value={10}>10°</option>
-                <option value={15}>15°</option>
-              </select>
-            </div>
-          </div>
+                className="accent-[#881337] rounded"
+              />
+              <span>Contornos de densidad</span>
+            </label>
 
-          <div className="space-y-1 pt-1 border-t border-slate-100">
-            <span className={labelCls}>Elementos proyectados</span>
             <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
-                checked={opciones.mostrar === null}
-                onChange={(e) => setOpt('mostrar', e.target.checked ? null : ['polos'])}
-                className="accent-[#881337]"
-              />
-              <span>Automático según mecanismo</span>
-            </label>
-            {opciones.mostrar !== null && (
-              <div className="pl-4 flex gap-3 pt-0.5">
-                {(['polos', 'planos', 'intersecciones'] as const).map((elem) => (
-                  <label
-                    key={elem}
-                    className="flex items-center gap-1 text-xs capitalize text-slate-700 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={opciones.mostrar?.includes(elem) ?? false}
-                      onChange={() => toggleElemento(elem)}
-                      className="accent-[#881337]"
-                    />
-                    <span>{elem}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1 pt-1 border-t border-slate-100">
-            <span className={labelCls}>Contornos y Símbolos</span>
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.contornos_general}
-                onChange={(e) => setOpt('contornos_general', e.target.checked)}
-                className="accent-[#881337]"
-              />
-              <span>Contornos de densidad (General)</span>
-            </label>
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.contornos_en_mecanismos}
-                onChange={(e) => setOpt('contornos_en_mecanismos', e.target.checked)}
-                className="accent-[#881337]"
-              />
-              <span>Contornos en mecanismos</span>
-            </label>
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.tamano_por_persistencia}
+                checked={opciones.tamano_por_persistencia ?? true}
                 onChange={(e) => setOpt('tamano_por_persistencia', e.target.checked)}
-                className="accent-[#881337]"
+                className="accent-[#881337] rounded"
               />
               <span>Tamaño por persistencia</span>
             </label>
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.etiquetas_polos === 'criticos'}
-                onChange={(e) =>
-                  setOpt('etiquetas_polos', e.target.checked ? 'criticos' : 'ninguno')
-                }
-                className="accent-[#881337]"
-              />
-              <span>Etiquetas de polos críticos (ID)</span>
-            </label>
-          </div>
 
-          <div className="grid grid-cols-2 gap-1 pt-1 border-t border-slate-100 text-xs min-w-0">
-            <label className="flex items-center gap-1 text-slate-700 cursor-pointer truncate">
+            <label
+              className={`flex items-center gap-1.5 text-xs ${
+                totalRows > 0 && totalRows < 50
+                  ? 'text-slate-700 cursor-pointer'
+                  : 'text-slate-400 cursor-not-allowed'
+              }`}
+              title={
+                totalRows > 0 && totalRows < 50
+                  ? 'Muestra el ID junto a cada polo'
+                  : `Disponible con menos de 50 polos (hay ${totalRows})`
+              }
+            >
               <input
                 type="checkbox"
-                checked={opciones.marcas_exteriores}
-                onChange={(e) => setOpt('marcas_exteriores', e.target.checked)}
-                className="accent-[#881337]"
+                disabled={totalRows <= 0 || totalRows >= 50}
+                checked={opciones.etiquetas_polos === 'todos' && totalRows > 0 && totalRows < 50}
+                onChange={(e) =>
+                  setOpt('etiquetas_polos', e.target.checked ? 'todos' : 'ninguno')
+                }
+                className="accent-[#881337] rounded"
               />
-              <span className="truncate">Marcas exteriores</span>
-            </label>
-            <label className="flex items-center gap-1 text-slate-700 cursor-pointer truncate">
-              <input
-                type="checkbox"
-                checked={opciones.cruz_central}
-                onChange={(e) => setOpt('cruz_central', e.target.checked)}
-                className="accent-[#881337]"
-              />
-              <span className="truncate">Cruz central</span>
-            </label>
-            <label className="flex items-center gap-1 text-slate-700 cursor-pointer truncate">
-              <input
-                type="checkbox"
-                checked={opciones.ejes_cruzados}
-                onChange={(e) => setOpt('ejes_cruzados', e.target.checked)}
-                className="accent-[#881337]"
-              />
-              <span className="truncate">Ejes N-S / E-W</span>
-            </label>
-            <label className="flex items-center gap-1 text-slate-700 cursor-pointer truncate">
-              <input
-                type="checkbox"
-                checked={opciones.circulo_perimetral}
-                onChange={(e) => setOpt('circulo_perimetral', e.target.checked)}
-                className="accent-[#881337]"
-              />
-              <span className="truncate">Círculo borde</span>
+              <span>Etiquetas de los polos (ID)</span>
             </label>
           </div>
         </TreeGroup>

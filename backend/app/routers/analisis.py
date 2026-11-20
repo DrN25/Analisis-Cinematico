@@ -40,7 +40,7 @@ from cinematica.lectura_discontinuidades import (  # noqa: E402
 )
 from cinematica.modelos_datos import GeometriaTalud, ParametrosDips  # noqa: E402
 from cinematica.planos_paralelos_talud import resumen_exclusion  # noqa: E402
-from cinematica.veredicto_mecanismos import evaluar_veredicto  # noqa: E402
+from cinematica.veredicto_mecanismos import evaluar_oblicuo, evaluar_veredicto  # noqa: E402
 from estereograma.figuras_mecanismos import FIGURAS  # noqa: E402
 from estereograma.opciones_estereograma import OpcionesEstereograma  # noqa: E402
 from salidas.exportar_resultados import (  # noqa: E402
@@ -261,6 +261,7 @@ def ejecutar(
             "exclusion_resumen": resumen_exclusion(res),
         },
         "veredictos": [asdict(v) for v in evaluar_veredicto(res, data.umbral)],
+        "oblicuo": asdict(evaluar_oblicuo(res, data.umbral)),
         "tablas": {
             "resumen_porcentajes": _df_records(resumen_porcentajes(res)),
             "criticos_por_tipo": _df_records(criticos_por_tipo(res).reset_index()),

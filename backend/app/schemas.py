@@ -154,9 +154,11 @@ class OpcionesPlotIn(BaseModel):
     simbolo_por_tipo: bool = True
     tamano_por_persistencia: bool = True
     tamano_simbolo: float = 30.0
+    tamano_polo: float = 10.0
     contornos_general: bool = True
     contornos_en_mecanismos: bool = True
     mapa_color: str = "YlOrRd"
+    mapa_color_mecanismos: Literal["Blues", "Greens", "Purples", "Greys"] = "Blues"
     titulo: bool = True
     caja_info: bool = True
     mostrar_proyeccion: bool = True

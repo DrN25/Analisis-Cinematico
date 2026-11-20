@@ -420,10 +420,12 @@ export default function App() {
     );
   }
 
-  const veredictosActivos = (analisis?.veredictos || []).map((v) => ({
-    ...v,
-    posible: v.criticos > 0 && v.porcentaje >= umbral,
-  }));
+  const veredictosActivos = (analisis?.veredictos || [])
+    .filter((v) => v.clave !== 'oblicuo')
+    .map((v) => ({
+      ...v,
+      posible: v.criticos > 0 && v.porcentaje >= umbral,
+    }));
   const posibles = veredictosActivos.filter((v) => v.posible);
 
   return (
@@ -528,13 +530,13 @@ export default function App() {
       {/* 2. ENCABEZADO DE LA APLICACIÓN */}
       <header className="h-12 shrink-0 bg-white border-b border-slate-200 px-4 flex items-center justify-between select-none">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full border border-slate-300 bg-slate-50 flex items-center justify-center p-0.5 shadow-2xs shrink-0">
-            <svg viewBox="0 0 36 36" className="w-7 h-7">
-              <circle cx="18" cy="18" r="15" fill="#f8fafc" stroke="#334155" strokeWidth="1.5" />
-              <ellipse cx="18" cy="18" rx="15" ry="7.5" fill="none" stroke="#dc2626" strokeWidth="1.5" />
-              <line x1="18" y1="3" x2="18" y2="33" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2,2" />
-              <line x1="3" y1="18" x2="33" y2="18" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2,2" />
-              <circle cx="18" cy="12" r="2" fill="#881337" />
+          <div className="w-9 h-9 rounded-full border border-slate-300 bg-slate-50 flex items-center justify-center p-0.5 shadow-2xs shrink-0">
+            <svg width="32" height="32" viewBox="0 0 38 38" aria-hidden="true" fill="none">
+              <circle cx="19" cy="19" r="17" stroke="#18202A" strokeWidth="2" />
+              <path d="M2.5 19 C 8 27, 30 27, 35.5 19" stroke="#1F4E9C" strokeWidth="2" />
+              <circle cx="19" cy="9" r="2.2" fill="#D9622B" />
+              <circle cx="15" cy="11" r="2.2" fill="#D9622B" />
+              <circle cx="25" cy="27" r="1.8" fill="#9AA5B1" />
             </svg>
           </div>
           <div>
@@ -564,53 +566,228 @@ export default function App() {
             </button>
 
             {showMasOpciones && (
-              <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2.5">
-                <div className="font-semibold text-slate-800 pb-1 border-b border-slate-100 flex items-center justify-between">
-                  <span>Opciones avanzadas</span>
+              <div className="absolute right-0 top-full mt-1 w-80 max-h-[82vh] overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-xl p-3.5 z-50 text-xs text-slate-700 space-y-3">
+                <div className="font-semibold text-slate-800 pb-1.5 border-b border-slate-100 flex items-center justify-between">
+                  <span>Más opciones del estereograma</span>
                   <button
                     type="button"
                     onClick={() => setShowMasOpciones(false)}
-                    className="text-slate-400 hover:text-slate-600 font-bold"
+                    className="text-slate-400 hover:text-slate-600 font-bold text-sm"
                   >
                     ×
                   </button>
                 </div>
 
+                {/* Etiquetas y Red */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
+                      Etiquetas
+                    </label>
+                    <select
+                      value={opciones.etiquetas}
+                      onChange={(e) =>
+                        setOpciones({
+                          ...opciones,
+                          etiquetas: e.target.value as 'grados' | 'cardinales' | 'ambos' | 'ninguna',
+                        })
+                      }
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    >
+                      <option value="grados">Grados</option>
+                      <option value="cardinales">Cardinales</option>
+                      <option value="ambos">Ambos</option>
+                      <option value="ninguna">Ninguna</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
+                      Ubicación leyenda
+                    </label>
+                    <select
+                      value={opciones.ubicacion_leyenda}
+                      onChange={(e) =>
+                        setOpciones({
+                          ...opciones,
+                          ubicacion_leyenda: e.target.value as 'derecha' | 'izquierda' | 'abajo' | 'ninguna',
+                        })
+                      }
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    >
+                      <option value="derecha">Derecha</option>
+                      <option value="izquierda">Izquierda</option>
+                      <option value="abajo">Abajo</option>
+                      <option value="ninguna">Ninguna</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Espaciados y Grosores */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
+                      Espaciado marcas (°)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={45}
+                      step={1}
+                      value={opciones.espaciado_marcas ?? 10}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, espaciado_marcas: Number(e.target.value) || 10 })
+                      }
+                      className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
+                      Intervalo de red (°)
+                    </label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={30}
+                      step={1}
+                      value={opciones.intervalo_red ?? 10}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, intervalo_red: Number(e.target.value) || 10 })
+                      }
+                      className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div>
+                    <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
+                      Borde
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={opciones.ancho_borde ?? 3}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, ancho_borde: Number(e.target.value) || 3 })
+                      }
+                      className="w-full px-1.5 py-1 border border-slate-300 rounded font-mono text-xs text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
+                      Interno
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={opciones.ancho_interno ?? 1}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, ancho_interno: Number(e.target.value) || 1 })
+                      }
+                      className="w-full px-1.5 py-1 border border-slate-300 rounded font-mono text-xs text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
+                      Grosor red
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={opciones.ancho_superposicion ?? 1}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, ancho_superposicion: Number(e.target.value) || 1 })
+                      }
+                      className="w-full px-1.5 py-1 border border-slate-300 rounded font-mono text-xs text-center"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtros de planos e intersecciones */}
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
+                      Planos dibujados
+                    </label>
+                    <select
+                      value={opciones.filtro_planos}
+                      onChange={(e) =>
+                        setOpciones({
+                          ...opciones,
+                          filtro_planos: e.target.value as 'criticos' | 'todos',
+                        })
+                      }
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    >
+                      <option value="criticos">Solo críticos</option>
+                      <option value="todos">Todos</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
+                      Intersecciones
+                    </label>
+                    <select
+                      value={opciones.filtro_intersecciones}
+                      onChange={(e) =>
+                        setOpciones({
+                          ...opciones,
+                          filtro_intersecciones: e.target.value as 'criticos' | 'todos',
+                        })
+                      }
+                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                    >
+                      <option value="criticos">Solo críticas</option>
+                      <option value="todos">Todas</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Escala de leyenda */}
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Intervalo de la red (°)
-                  </label>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[11px] font-medium text-slate-600">
+                      Escala de leyenda (%)
+                    </label>
+                    <span className="font-mono text-xs text-slate-700">
+                      {opciones.escala_leyenda ?? 100}%
+                    </span>
+                  </div>
                   <input
-                    type="number"
-                    min={2}
-                    max={30}
-                    step={2}
-                    value={opciones.intervalo_red ?? 10}
+                    type="range"
+                    min={50}
+                    max={150}
+                    step={5}
+                    value={opciones.escala_leyenda ?? 100}
                     onChange={(e) =>
-                      setOpciones({ ...opciones, intervalo_red: Number(e.target.value) || 10 })
+                      setOpciones({ ...opciones, escala_leyenda: Number(e.target.value) })
                     }
-                    className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
+                    className="w-full accent-[#881337] h-1.5 cursor-pointer"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Espaciado de marcas (°)
+                {/* Casillas de verificación avanzadas */}
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 text-[11px]">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.marcas_exteriores ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, marcas_exteriores: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Marcas exteriores</span>
                   </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={45}
-                    value={opciones.espaciado_marcas ?? 10}
-                    onChange={(e) =>
-                      setOpciones({ ...opciones, espaciado_marcas: Number(e.target.value) || 10 })
-                    }
-                    className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={opciones.circulo_perimetral ?? true}
@@ -621,7 +798,7 @@ export default function App() {
                     />
                     <span>Círculo perimetral</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={opciones.cruz_central ?? true}
@@ -632,7 +809,7 @@ export default function App() {
                     />
                     <span>Cruz central</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={opciones.ejes_cruzados ?? false}
@@ -643,7 +820,29 @@ export default function App() {
                     />
                     <span>Ejes cruzados</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.simbolo_por_tipo ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, simbolo_por_tipo: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Símbolo por tipo</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.etiqueta_filtro ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, etiqueta_filtro: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Etiqueta de filtro</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={opciones.caja_info ?? true}
@@ -652,8 +851,38 @@ export default function App() {
                       }
                       className="rounded text-[#881337] focus:ring-[#881337]"
                     />
-                    <span>Cuadro de información</span>
+                    <span>Cuadro de datos</span>
                   </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.titulo ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, titulo: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Título</span>
+                  </label>
+                </div>
+
+                {/* Resolución de exportación */}
+                <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                  <label className="text-[11px] font-medium text-slate-600">
+                    Resolución de exportación
+                  </label>
+                  <select
+                    value={opciones.dpi_exportar ?? 300}
+                    onChange={(e) =>
+                      setOpciones({ ...opciones, dpi_exportar: Number(e.target.value) })
+                    }
+                    className="px-2 py-0.5 border border-slate-300 rounded font-mono text-xs"
+                  >
+                    <option value={150}>150 dpi</option>
+                    <option value={200}>200 dpi</option>
+                    <option value={300}>300 dpi</option>
+                    <option value={600}>600 dpi</option>
+                  </select>
                 </div>
               </div>
             )}

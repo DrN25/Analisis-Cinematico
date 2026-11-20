@@ -174,7 +174,13 @@ export const RightInspector: React.FC<Props> = ({
     posible: v.criticos > 0 && v.porcentaje >= umbral,
   }));
 
-  const maxPct = Math.max(...veredictos.map((v) => v.porcentaje), 0);
+  const veredictosPrincipales = veredictos.filter((v) => v.clave !== 'oblicuo');
+  const rawOblicuo = data.oblicuo || veredictos.find((v) => v.clave === 'oblicuo');
+  const oblicuo = rawOblicuo
+    ? { ...rawOblicuo, posible: rawOblicuo.criticos > 0 && rawOblicuo.porcentaje >= umbral }
+    : undefined;
+
+  const maxPct = Math.max(...veredictosPrincipales.map((v) => v.porcentaje), 0);
   const escala = 50;
   const marcaPct = Math.min(100, (umbral / escala) * 100);
   const t = data.tablas;
@@ -205,7 +211,7 @@ export const RightInspector: React.FC<Props> = ({
 
       {/* 4 Tarjetas de mecanismo 2x2 */}
       <div className="grid grid-cols-2 gap-2">
-        {veredictos.map((v) => {
+        {veredictosPrincipales.map((v) => {
           const active = vista === v.clave;
           const isTop = maxPct > 0 && v.porcentaje === maxPct;
           const fillPct = Math.min(100, (v.porcentaje / escala) * 100);
@@ -213,7 +219,7 @@ export const RightInspector: React.FC<Props> = ({
             <button
               key={v.clave}
               type="button"
-              onClick={() => onSelectVista(v.clave)}
+              onClick={() => onSelectVista(v.clave as VistaKey)}
               className={`text-left rounded-lg p-2.5 border transition-all ${
                 v.posible
                   ? 'bg-[#FFF8F6] border-[#F0C4AC] hover:border-[#E2A88B]'
@@ -261,6 +267,17 @@ export const RightInspector: React.FC<Props> = ({
                 />
               </div>
               <div className="text-[10.5px] text-slate-500 truncate font-mono">{v.detalles[0]}</div>
+
+              {v.clave === 'directo' && oblicuo && (
+                <div className="mt-1 pt-1 border-t border-slate-100 text-[9.5px] text-slate-500 leading-tight">
+                  <div className="truncate">
+                    C2 (oblicuo): <strong className="text-slate-700">{oblicuo.porcentaje.toFixed(1)}%</strong>
+                  </div>
+                  {oblicuo.posible && (
+                    <div className="text-amber-700 font-semibold">⚠ C2 &gt; {umbral}%</div>
+                  )}
+                </div>
+              )}
             </button>
           );
         })}
