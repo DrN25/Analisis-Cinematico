@@ -26,34 +26,34 @@
   background: #94a3b8;
 }
 
-/* Estilos originales de la Interfaz Slope Kinematic */
-.ac-contexto { font-size:13.5px; color:#4D5866; margin:-4px 0 10px; }
-.ac-veredicto { display:flex; gap:12px; align-items:center; border-radius:10px; padding:12px 16px; margin:4px 0 14px; }
+/* Estilos originales de la Interfaz Slope Kinematic (optimizados para encajar en pantalla sin scroll) */
+.ac-contexto { font-size:12px; color:#4D5866; margin:0 0 5px; line-height: 1.3; }
+.ac-veredicto { display:flex; gap:10px; align-items:center; border-radius:8px; padding:6px 12px; margin:2px 0 6px; }
 .ac-veredicto-si { background:#FFF4EE; border:1px solid #F0C4AC; }
 .ac-veredicto-no { background:#EEF4FB; border:1px solid #D5E2F2; }
-.ac-veredicto b { color:#18202A; }
-.ac-veredicto span { font-size:13.5px; color:#3F4955; }
-.ac-tarjeta { background:#FFFFFF; border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; cursor:pointer; transition:all 0.15s ease; }
+.ac-veredicto b { color:#18202A; font-size:12.5px; }
+.ac-veredicto span { font-size:11.5px; color:#3F4955; }
+.ac-tarjeta { background:#FFFFFF; border-radius:8px; padding:6px 10px; display:flex; flex-direction:column; gap:2.5px; cursor:pointer; transition:all 0.15s ease; }
 .ac-tarjeta-si { border:1.5px solid #E2A88B; }
 .ac-tarjeta-no { border:1.5px solid #DDE2E8; }
 .ac-tarjeta-adv { border:1.5px solid #E8C46A; }
-.ac-cab { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.ac-nombre { font-weight:600; font-size:15px; color:#18202A; }
-.ac-insignia { font-weight:700; font-size:13px; letter-spacing:.04em; border-radius:999px; padding:3px 11px; }
+.ac-cab { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+.ac-nombre { font-weight:600; font-size:12.5px; color:#18202A; }
+.ac-insignia { font-weight:700; font-size:10.5px; letter-spacing:.04em; border-radius:999px; padding:1.5px 7px; }
 .ac-insignia-si { background:#B93815; color:#FFFFFF; }
 .ac-insignia-no { background:#E7F0FA; color:#1F4E9C; }
 .ac-insignia-adv { background:#F6D77A; color:#5C3F00; }
-.ac-pct { display:flex; align-items:baseline; gap:6px; }
-.ac-num { font-size:32px; font-weight:600; line-height:1; color:#18202A; }
-.ac-unid { font-size:15px; color:#4D5866; }
-.ac-n { font-size:13px; color:#3F4955; }
-.ac-barra { position:relative; height:8px; background:#E6EAEE; border-radius:999px; margin:4px 0; }
-.ac-relleno { height:8px; border-radius:999px; }
-.ac-umbral { position:absolute; top:-4px; width:2px; height:16px; background:#18202A; }
-.ac-advertencia { font-size:13px; color:#8A5A00; font-weight:500; }
-.ac-sub { font-size:13px; color:#3F4955; }
-.ac-notas { background:#F6F8FA; border:1px solid #DDE2E8; border-radius:10px; padding:12px 18px 8px; margin-top:14px; }
-.ac-notas-tit { font-weight:600; font-size:14px; color:#18202A; margin-bottom:6px; }
-.ac-notas ol { margin:0; padding-left:20px; }
-.ac-notas li { font-size:13px; color:#3F4955; margin-bottom:6px; line-height:1.45; }
+.ac-pct { display:flex; align-items:baseline; gap:4px; }
+.ac-num { font-size:20px; font-weight:700; line-height:1; color:#18202A; }
+.ac-unid { font-size:11.5px; color:#4D5866; }
+.ac-n { font-size:10.5px; color:#3F4955; line-height:1.2; }
+.ac-barra { position:relative; height:5px; background:#E6EAEE; border-radius:999px; margin:2px 0; }
+.ac-relleno { height:5px; border-radius:999px; }
+.ac-umbral { position:absolute; top:-3px; width:2px; height:11px; background:#18202A; }
+.ac-advertencia { font-size:10.5px; color:#8A5A00; font-weight:500; }
+.ac-sub { font-size:10.5px; color:#3F4955; }
+.ac-notas { background:#F6F8FA; border:1px solid #DDE2E8; border-radius:8px; padding:6px 12px 4px; margin-top:6px; }
+.ac-notas-tit { font-weight:600; font-size:11.5px; color:#18202A; margin-bottom:2px; }
+.ac-notas ol { margin:0; padding-left:16px; }
+.ac-notas li { font-size:10.5px; color:#3F4955; margin-bottom:2px; line-height:1.35; }
 

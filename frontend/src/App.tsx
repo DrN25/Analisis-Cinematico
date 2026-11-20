@@ -1020,10 +1020,10 @@ export default function App() {
             )}
 
             {analisis ? (
-              <div className="flex-1 min-h-0 overflow-y-auto p-5">
+              <div className="flex-1 min-h-0 overflow-y-auto p-3 lg:p-4">
                 {/* 1. Encabezado del Resumen */}
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold text-[#18202A] tracking-tight mb-1 font-sans">
+                <div className="mb-2">
+                  <h3 className="text-base font-bold text-[#18202A] tracking-tight mb-0.5 font-sans leading-tight">
                     Resumen del análisis cinemático
                   </h3>
                   <div className="ac-contexto">
@@ -1033,13 +1033,13 @@ export default function App() {
                   {/* Veredicto HTML */}
                   <div className={`ac-veredicto ${posibles.length > 0 ? 'ac-veredicto-si' : 'ac-veredicto-no'}`}>
                     {posibles.length > 0 ? (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B93815" strokeWidth="2" aria-hidden="true" className="shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B93815" strokeWidth="2" aria-hidden="true" className="shrink-0">
                         <path d="M12 3l9.5 17h-19z" />
                         <path d="M12 10v4" />
                         <path d="M12 17.2v.1" />
                       </svg>
                     ) : (
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F4E9C" strokeWidth="2" aria-hidden="true" className="shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F4E9C" strokeWidth="2" aria-hidden="true" className="shrink-0">
                         <circle cx="12" cy="12" r="9" />
                         <path d="M8 12.5l2.7 2.7L16 9.8" />
                       </svg>
@@ -1059,9 +1059,9 @@ export default function App() {
                 </div>
 
                 {/* 2. Cuerpo: col_tarjetas (izquierda) y col_figura (derecha) */}
-                <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6 items-start pb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr] gap-4 items-start pb-2">
                   {/* Columna Tarjetas Apiladas (col_tarjetas) */}
-                  <div className="space-y-3 shrink-0">
+                  <div className="space-y-1.5 shrink-0">
                     {veredictosActivos.map((v) => {
                       const active = vista === v.clave;
                       const si = v.posible;
@@ -1124,7 +1124,7 @@ export default function App() {
                   {/* Columna Estereograma y Notas (col_figura) */}
                   <div className="flex flex-col min-w-0">
                     {/* Selector de vistas */}
-                    <div className="flex items-center justify-start gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 mb-3 overflow-x-auto select-none">
+                    <div className="flex items-center justify-start gap-1 p-0.5 bg-slate-100 rounded-lg border border-slate-200 mb-2 overflow-x-auto select-none">
                       {VISTAS.map((v) => {
                         const active = vista === v.id;
                         return (
@@ -1132,7 +1132,7 @@ export default function App() {
                             key={v.id}
                             type="button"
                             onClick={() => setVista(v.id)}
-                            className={`px-3 py-1.5 text-xs rounded-md transition-all font-medium cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 text-[11px] rounded transition-all font-medium cursor-pointer whitespace-nowrap ${
                               active
                                 ? 'bg-white text-slate-900 font-bold shadow-xs border border-slate-200'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -1145,10 +1145,10 @@ export default function App() {
                     </div>
 
                     {/* Contenedor del Estereograma */}
-                    <div className="relative flex items-center justify-center p-3 bg-white border border-slate-200 rounded-xl min-h-[460px] shadow-2xs overflow-hidden">
+                    <div className="relative flex items-center justify-center p-2 bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden max-h-[46vh] lg:max-h-[44vh] xl:max-h-[48vh]">
                       {(running || redrawing) && (
-                        <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded bg-slate-900/85 text-white text-xs font-mono shadow flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                        <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-900/85 text-white text-[11px] font-mono shadow flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
                           <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
                         </div>
                       )}
@@ -1156,10 +1156,10 @@ export default function App() {
                         <img
                           src={figuraSrc}
                           alt={`Estereograma ${vista}`}
-                          className="max-w-full max-h-[64vh] object-contain select-none"
+                          className="max-w-full max-h-[44vh] lg:max-h-[42vh] xl:max-h-[46vh] h-auto object-contain select-none"
                         />
                       ) : (
-                        <div className="text-xs text-slate-400 font-mono">
+                        <div className="text-xs text-slate-400 font-mono py-12">
                           {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
                         </div>
                       )}
