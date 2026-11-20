@@ -3,6 +3,14 @@
   command = "npm run build"
   publish = "dist"
 
+# Proxy hacia el backend en DigitalOcean
+# Evita errores de Mixed Content (HTTPS a HTTP) y elimina bloqueos de CORS
+[[redirects]]
+  from = "/api/*"
+  to = "http://138.68.55.242:8002/api/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

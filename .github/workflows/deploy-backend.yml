@@ -1,0 +1,34 @@
+name: Deploy Backend to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'docker-compose.yml'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conectar al Droplet y actualizar Backend
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DO_HOST || '138.68.55.242' }}
+          username: ${{ secrets.DO_USER || 'root' }}
+          password: ${{ secrets.DO_PASSWORD }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            echo "--> Desplegando nueva versión en DigitalOcean..."
+            cd /var/www/Analisis-Cinematico
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose build backend
+            docker compose up -d backend
+            sleep 3
+            docker compose ps
+            curl -s http://127.0.0.1:8002/api/health
