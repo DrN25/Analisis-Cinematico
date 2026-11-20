@@ -72,7 +72,7 @@ La pantalla principal tiene cuatro zonas fijas.
 Cuatro grupos desplegables: `Datos y Filtros`, `Geometría del Talud`, `Parámetros Cinemáticos` y `Opciones de Estereograma`. Cada grupo se abre o cierra tocando su encabezado.
 
 **Zona 3 — Área central:**
-Muestra la proyección estereográfica. Arriba hay una barra con el recuento de mecanismos detectados y el umbral activo. Debajo del gráfico están las 6 pestañas para cambiar de vista.
+Muestra la proyección estereográfica. En la parte superior se ubican la barra con el recuento de mecanismos detectados y las 6 pestañas para alternar de gráfico. Debajo se despliega el lienzo estereográfico y al pie la barra de estado.
 
 **Zona 4 — Panel derecho (`Inspector de Mecanismos`):**
 Muestra las 4 tarjetas de veredicto cinemático (`Rotura planar`, `Rotura en cuña`, `Toppling flexural`, `Toppling directo`) y las tablas de resultados de la vista seleccionada.
@@ -259,11 +259,11 @@ El cálculo también se ejecuta automáticamente al presionar **`Aplicar y ejecu
 
 ## 7. LAS 6 VISTAS GRÁFICAS
 
-Debajo del estereograma hay una fila de pestañas numeradas. Al hacer clic en una, el gráfico central cambia y la tabla del panel derecho se actualiza para mostrar los datos de esa vista.
+En la parte superior del área gráfica se ubica la fila de pestañas de navegación. Al hacer clic en cualquiera de ellas, el estereograma se actualiza y la tabla del panel derecho muestra la información técnica correspondiente a esa vista.
 
 > **Instrucción para Captura [FIG-07]:**
-> Captura de la fila de pestañas debajo del estereograma.
-> - Recuadro rojo **(1)** sobre las 6 pestañas: `Estereograma General`, `Rotura Planar`, `Rotura en Cuña`, `Toppling Flexural`, `Toppling Directo`, `Roseta de Rumbos`.
+> Captura de la parte superior del área central.
+> - Recuadro rojo **(1)** sobre las 6 pestañas de vistas: `Estereograma General`, `Rotura Planar`, `Rotura en Cuña`, `Toppling Flexural`, `Toppling Directo`, `Roseta de Rumbos`.
 > - Recuadro rojo **(2)** sobre la barra informativa superior que indica los mecanismos activos y el umbral.
 
 ---

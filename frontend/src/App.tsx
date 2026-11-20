@@ -1002,6 +1002,27 @@ export default function App() {
             </div>
           )}
 
+          {/* Pestañas de Vistas Superiores */}
+          <div className="h-10 shrink-0 bg-slate-100 border-b border-slate-200 px-3 flex items-end gap-1.5 overflow-x-auto select-none">
+            {VISTAS.map((v) => {
+              const active = vista === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setVista(v.id)}
+                  className={`px-4 py-2 text-xs rounded-t border-t border-x transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    active
+                      ? 'bg-white border-slate-300 border-t-2 border-t-[#881337] text-slate-900 font-bold -mb-px z-10 shadow-xs'
+                      : 'bg-slate-200/50 border-slate-200/60 hover:bg-slate-200 hover:text-slate-900 text-slate-600 font-medium'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Lienzo del Estereograma */}
           <div className="flex-1 min-h-0 relative flex items-center justify-center p-3 overflow-auto bg-white">
             {(running || redrawing) && (
@@ -1027,28 +1048,7 @@ export default function App() {
             )}
           </div>
 
-          {/* 4. PESTAÑAS DE VISTAS INFERIORES */}
-          <div className="h-8 shrink-0 bg-slate-100 border-t border-slate-200 px-3 flex items-end gap-1 overflow-x-auto select-none">
-            {VISTAS.map((v) => {
-              const active = vista === v.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setVista(v.id)}
-                  className={`px-3 py-1.5 text-xs rounded-t border-t border-x transition-colors cursor-pointer ${
-                    active
-                      ? 'bg-white border-t-2 border-t-[#881337] border-slate-200 text-slate-900 font-semibold -mb-px z-10 shadow-sm'
-                      : 'bg-transparent border-transparent hover:bg-slate-200/70 text-slate-600 font-medium'
-                  }`}
-                >
-                  {v.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 5. BARRA DE ESTADO INFERIOR LIMPIA */}
+          {/* Barra de estado inferior limpia */}
           <footer className="h-6 shrink-0 bg-slate-50 border-t border-slate-200 px-3 flex items-center justify-between text-[11px] text-slate-500 font-mono select-none">
             <div className="truncate">
               {analisis
