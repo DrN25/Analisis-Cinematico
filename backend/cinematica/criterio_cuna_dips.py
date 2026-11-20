@@ -13,6 +13,7 @@ Comprobado contra una exportación de Dips v9 (1 144 planos, 653 721 interseccio
 P1 69 115 de 69 118; las demás diferencias son intersecciones exactamente sobre el borde de la zona.
 """
 import numpy as np
+import pandas as pd
 
 from cinematica.geometria_esferica import TOL, buz_aparente, envolver, lineas_circulo_maximo, lineas_cono_vertical
 
@@ -50,7 +51,7 @@ def evaluar_cuna(intersecciones, talud, param):
     t, p = r["Trend"].to_numpy(float), r["Plunge"].to_numpy(float)
     b1, d1 = r["Buz_1"].to_numpy(float), r["DirBuz_1"].to_numpy(float)
     b2, d2 = r["Buz_2"].to_numpy(float), r["DirBuz_2"].to_numpy(float)
-    r["Buz_Aparente_Talud"] = np.round(buz_aparente(talud.buz, talud.dirbuz, t), 1)
+    r["Buz_Aparente_Talud"] = np.round(buz_aparente(talud.buz, talud.dirbuz, t), 1).astype(np.float32)
     primaria = zona_primaria_cuna(t, p, talud, param)
     v1, v2 = vector_en_primaria(b1, d1, talud, param), vector_en_primaria(b2, d2, talud, param)
     secundaria = zona_secundaria_cuna(t, p, talud, param) & (v1 | v2)
@@ -58,13 +59,33 @@ def evaluar_cuna(intersecciones, talud, param):
     un_plano = primaria & (e1 | e2)
     r["Zona_Primaria"], r["Zona_Secundaria"] = primaria, secundaria
     r["Critico"] = primaria | secundaria
-    r["Modo"] = np.where(primaria & ~un_plano, "P2", np.where(un_plano | secundaria, "P1", ""))
-    r["Clasificacion"] = np.select([primaria & ~un_plano, un_plano, secundaria],
-                                   ["P2 · cuña, desliza en dos planos", "P1 · desliza en un plano (zona primaria)",
-                                    "P1 · desliza en un plano (zona secundaria)"], "No crítica")
+    r["Modo"] = pd.Categorical(
+        np.where(primaria & ~un_plano, "P2", np.where(un_plano | secundaria, "P1", "")),
+        categories=["P1", "P2", ""],
+    )
+    clasif_cats = [
+        "P2 · cuña, desliza en dos planos",
+        "P1 · desliza en un plano (zona primaria)",
+        "P1 · desliza en un plano (zona secundaria)",
+        "No crítica",
+    ]
+    r["Clasificacion"] = pd.Categorical(
+        np.select([primaria & ~un_plano, un_plano, secundaria],
+                  ["P2 · cuña, desliza en dos planos", "P1 · desliza en un plano (zona primaria)",
+                   "P1 · desliza en un plano (zona secundaria)"], "No crítica"),
+        categories=clasif_cats,
+    )
     plano_prim = np.where(e1 & (~e2 | (b1 >= b2)), r["Plano_1"], r["Plano_2"])
     plano_sec = np.where(v1 & (~v2 | (b1 >= b2)), r["Plano_1"], r["Plano_2"])
-    r["Plano_Deslizamiento"] = np.where(un_plano, plano_prim, np.where(secundaria, plano_sec, ""))
+    desliz_cats = (
+        list(intersecciones["Plano_1"].cat.categories) + [""]
+        if hasattr(intersecciones["Plano_1"], "cat")
+        else None
+    )
+    r["Plano_Deslizamiento"] = pd.Categorical(
+        np.where(un_plano, plano_prim, np.where(secundaria, plano_sec, "")),
+        categories=desliz_cats,
+    )
     return r
 
 

@@ -1,9 +1,12 @@
 """Excel, PNG y ZIP de resultados, todo en memoria (bytes): nada se sube a ningún servidor."""
 import gc
 import io
+import os
 import re
+import tempfile
 import zipfile
 from dataclasses import replace
+from pathlib import Path
 
 import pandas as pd
 
@@ -119,51 +122,80 @@ def excel_resultados(res, umbral=None, descartadas=None):
 
     # --- intersecciones (mismo orden que el cálculo; la cuña y el toppling se evalúan sobre la misma tabla)
     inter = res.intersecciones
-    p1 = inter.Plano_1.astype(str).map(id_de).tolist()
-    p2 = inter.Plano_2.astype(str).map(id_de).tolist()
-    trend, plunge = inter.Trend.to_numpy(float).tolist(), inter.Plunge.to_numpy(float).tolist()
-    # C1: toppling directo (zonas 1 y 2) · C2: toppling oblicuo (zona 3); excluyentes entre sí
-    directo = res.directo_aristas
-    c12 = ["C1" if a else ("C2" if b else None)
-           for a, b in zip(directo.Directo.to_numpy(bool), directo.Oblicuo.to_numpy(bool))]
-    cuna = res.cuna.Modo.fillna("").astype(str).tolist()
+    p1_arr = inter.Plano_1.astype(str).map(id_de).to_numpy()
+    p2_arr = inter.Plano_2.astype(str).map(id_de).to_numpy()
+    trend_arr = inter.Trend.to_numpy(float)
+    plunge_arr = inter.Plunge.to_numpy(float)
+    dir_bool = res.directo_aristas.Directo.to_numpy(bool)
+    obl_bool = res.directo_aristas.Oblicuo.to_numpy(bool)
+    cuna_arr = res.cuna.Modo.fillna("").to_numpy()
+
     encabezado = ["Intersection ID", "Trend", "Plunge", "Quantity", "Plane ID #1", "Plane ID #2",
                   "Direct Toppling", "Wedge Sliding"]
     hoja, n_hoja, filas = None, 0, 0
-    for k in range(len(inter)):
+    n_total = len(inter)
+    for k in range(n_total):
         if hoja is None or filas >= MAX_FILAS_HOJA:   # más de 1 048 575 intersecciones: sigue en otra hoja
             n_hoja += 1
             hoja = wb.create_sheet("Plane Intersections" + ("" if n_hoja == 1 else f" ({n_hoja})"))
             hoja.append(encabezado)
             filas = 0
-        hoja.append([k, trend[k], plunge[k], 1, p1[k], p2[k], c12[k], cuna[k] or None])
+        c12_val = "C1" if dir_bool[k] else ("C2" if obl_bool[k] else None)
+        c_mode = cuna_arr[k]
+        cuna_val = str(c_mode) if (c_mode and c_mode != "") else None
+        hoja.append([k, trend_arr[k], plunge_arr[k], 1, p1_arr[k], p2_arr[k], c12_val, cuna_val])
         filas += 1
     if hoja is None:
         wb.create_sheet("Plane Intersections").append(encabezado)
 
-    buf = io.BytesIO()
-    wb.save(buf)
-    return buf.getvalue()
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_f:
+        tmp_name = tmp_f.name
+    try:
+        wb.save(tmp_name)
+        data = Path(tmp_name).read_bytes()
+    finally:
+        try:
+            os.remove(tmp_name)
+        except Exception:
+            pass
+    del wb
+    gc.collect()
+    return data
 
 
 def zip_resultados(res, op, umbral=None, descartadas=None, resolucion_exportar=201):
     """ZIP con el Excel de resultados, CSVs de intersecciones críticas y un PNG por estereograma."""
     op_exp = replace(op, resolucion=min(resolucion_exportar, 201))
     base = nombre_base(res)
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr(f"{base}_resultados.xlsx", excel_resultados(res, umbral, descartadas))
-        cuna, aristas = tablas_intersecciones(res)
-        z.writestr(f"{base}_cuna_intersecciones_criticas.csv", cuna.to_csv(index=False).encode("utf-8-sig"))
-        z.writestr(f"{base}_toppling_directo_aristas_criticas.csv", aristas.to_csv(index=False).encode("utf-8-sig"))
-        # Renderizar cada figura liberando memoria inmediatamente para evitar picos >512MB
-        for clave, (_, funcion) in FIGURAS.items():
-            fig = funcion(res, op_exp)
-            png_bytes = png_figura(fig, min(op.dpi_exportar, 200))
-            z.writestr(f"{base}_{clave}.png", png_bytes)
-            plt.close("all")
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_z:
+        tmp_zip_name = tmp_z.name
+    try:
+        with zipfile.ZipFile(tmp_zip_name, "w", zipfile.ZIP_DEFLATED) as z:
+            # 1. Excel de resultados en flujo
+            z.writestr(f"{base}_resultados.xlsx", excel_resultados(res, umbral, descartadas))
             gc.collect()
-    val = buf.getvalue()
-    buf.close()
+
+            # 2. CSVs de intersecciones críticas
+            cuna, aristas = tablas_intersecciones(res)
+            z.writestr(f"{base}_cuna_intersecciones_criticas.csv", cuna.to_csv(index=False).encode("utf-8-sig"))
+            del cuna
+            z.writestr(f"{base}_toppling_directo_aristas_criticas.csv", aristas.to_csv(index=False).encode("utf-8-sig"))
+            del aristas
+            gc.collect()
+
+            # 3. 6 estereogramas liberando memoria por iteración
+            for clave, (_, funcion) in FIGURAS.items():
+                fig = funcion(res, op_exp)
+                png_bytes = png_figura(fig, min(op.dpi_exportar, 200))
+                z.writestr(f"{base}_{clave}.png", png_bytes)
+                del png_bytes
+                plt.close("all")
+                gc.collect()
+        data = Path(tmp_zip_name).read_bytes()
+    finally:
+        try:
+            os.remove(tmp_zip_name)
+        except Exception:
+            pass
     gc.collect()
-    return val
+    return data

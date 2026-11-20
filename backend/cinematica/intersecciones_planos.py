@@ -14,11 +14,24 @@ def calcular_intersecciones(datos, ang_min=0.0):
     ok = (ang > 1e-6) & (ang >= ang_min)   # planos idénticos no tienen intersección (Dips también los omite)
     i, j, c = i[ok], j[ok], c[ok]
     trend, plunge = linea_desde_vector(c) if len(c) else (np.array([]), np.array([]))
-    ids, b, d = datos["ID"].to_numpy(), datos["Buz"].to_numpy(float), datos["DirBuz"].to_numpy(float)
+    ids = datos["ID"].to_numpy()
+    b, d = datos["Buz"].to_numpy(float), datos["DirBuz"].to_numpy(float)
     tipo = datos["Tipo"].to_numpy() if "Tipo" in datos else np.full(len(datos), "Sin tipo")
     pers = datos["Persistencia"].to_numpy(float) if "Persistencia" in datos else np.full(len(datos), np.nan)
+    unique_ids = pd.unique(ids)
+    unique_tipos = pd.unique(tipo)
     return pd.DataFrame({
-        "Plano_1": ids[i], "Tipo_1": tipo[i], "Buz_1": b[i], "DirBuz_1": d[i], "Persist_1": pers[i],
-        "Plano_2": ids[j], "Tipo_2": tipo[j], "Buz_2": b[j], "DirBuz_2": d[j], "Persist_2": pers[j],
-        "Persist_min": np.fmin(pers[i], pers[j]),
-        "Trend": trend, "Plunge": plunge})   # sin redondear: se redondea solo al mostrar
+        "Plano_1": pd.Categorical(ids[i], categories=unique_ids),
+        "Tipo_1": pd.Categorical(tipo[i], categories=unique_tipos),
+        "Buz_1": b[i].astype(np.float32),
+        "DirBuz_1": d[i].astype(np.float32),
+        "Persist_1": pers[i].astype(np.float32),
+        "Plano_2": pd.Categorical(ids[j], categories=unique_ids),
+        "Tipo_2": pd.Categorical(tipo[j], categories=unique_tipos),
+        "Buz_2": b[j].astype(np.float32),
+        "DirBuz_2": d[j].astype(np.float32),
+        "Persist_2": pers[j].astype(np.float32),
+        "Persist_min": np.fmin(pers[i], pers[j]).astype(np.float32),
+        "Trend": trend.astype(np.float32),
+        "Plunge": plunge.astype(np.float32),
+    })

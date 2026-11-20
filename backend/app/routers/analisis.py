@@ -61,8 +61,8 @@ from app.deps import get_current_user  # noqa: E402
 router = APIRouter()
 
 MAX_UPLOAD_BYTES = 80 * 1024  # Límite estricto de 80 KB por archivo
-CACHE_MAX_ITEMS = 3
-CACHE_TTL_SECONDS = 600
+CACHE_MAX_ITEMS = 4
+CACHE_TTL_SECONDS = 900
 
 PLOT_LOCK = threading.Lock()
 CACHE_LOCK = threading.Lock()
@@ -108,14 +108,15 @@ def _cache_put(user_id: int, res: Any, descartadas: pd.DataFrame) -> str:
     analysis_id = uuid.uuid4().hex
     now = time.monotonic()
     with CACHE_LOCK:
-        # Purgar análisis anteriores del mismo usuario para liberar DataFrames de memoria
-        prev_keys = [k for k in ANALYSIS_CACHE if k[0] == user_id]
-        for k in prev_keys:
-            ANALYSIS_CACHE.pop(k, None)
         # Purgar análisis expirados
         stale = [k for k, (_, _, ts) in ANALYSIS_CACHE.items() if now - ts > CACHE_TTL_SECONDS]
         for k in stale:
             ANALYSIS_CACHE.pop(k, None)
+        # Si este usuario ya tiene 2 o más análisis cacheados, purgar los más antiguos
+        user_keys = [k for k in ANALYSIS_CACHE if k[0] == user_id]
+        if len(user_keys) >= 2:
+            for k in user_keys[:-1]:
+                ANALYSIS_CACHE.pop(k, None)
         ANALYSIS_CACHE[(user_id, analysis_id)] = (res, descartadas, now)
         while len(ANALYSIS_CACHE) > CACHE_MAX_ITEMS:
             ANALYSIS_CACHE.popitem(last=False)
