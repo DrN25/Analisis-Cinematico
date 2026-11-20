@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  AlertTriangle,
   Archive,
   CheckCircle2,
   ChevronDown,
@@ -28,7 +27,6 @@ import { HelpModal } from './components/HelpModal';
 import { HelpTooltip } from './components/HelpTooltip';
 import { LeftSidebar } from './components/LeftSidebar';
 import { LoginView } from './components/LoginView';
-import { RightInspector, TablaExportKey } from './components/RightInspector';
 import {
   AnalisisResponse,
   DEFAULT_OPCIONES_PLOT,
@@ -58,7 +56,6 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
 
   const [filename, setFilename] = useState('discontinuidades_ejemplo.csv');
   const [rows, setRows] = useState<DiscontinuidadRow[]>([]);
@@ -350,29 +347,6 @@ export default function App() {
     }
   };
 
-  const handleExportTableCsv = async (tabla: TablaExportKey) => {
-    await withAnalysisRetry(async (analysisId) => {
-      const { blob, filename: dlName } = await apiBlob(
-        `/api/analisis/exportar/tabla-csv/${tabla}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ analysis_id: analysisId, vista, umbral, opciones }),
-        },
-      );
-      triggerDownload(blob, dlName || `${tabla}.csv`);
-    });
-  };
-
-  const handleExportCunaExcel = async () => {
-    await withAnalysisRetry(async (analysisId) => {
-      const { blob, filename: dlName } = await apiBlob('/api/analisis/exportar/cuna-excel', {
-        method: 'POST',
-        body: JSON.stringify({ analysis_id: analysisId, vista, umbral, opciones }),
-      });
-      triggerDownload(blob, dlName || 'cuna_criticas.xlsx');
-    });
-  };
-
   const handleClearData = () => {
     setRows([]);
     setDescartadas([]);
@@ -419,9 +393,35 @@ export default function App() {
     .filter((v) => v.clave !== 'oblicuo')
     .map((v) => ({
       ...v,
-      posible: v.criticos > 0 && v.porcentaje >= umbral,
+      posible: v.criticos > 0 && v.porcentaje > umbral,
     }));
   const posibles = veredictosActivos.filter((v) => v.posible);
+
+  const rawOblicuo =
+    analisis?.oblicuo || (analisis?.veredictos || []).find((v) => v.clave === 'oblicuo');
+  const oblicuo = rawOblicuo
+    ? { ...rawOblicuo, posible: rawOblicuo.criticos > 0 && rawOblicuo.porcentaje > umbral }
+    : undefined;
+
+  let veredictoTitulo = '';
+  let veredictoTexto = '';
+  if (posibles.length === 0) {
+    veredictoTitulo = 'Ningún mecanismo cinemáticamente posible';
+    veredictoTexto = `Ningún mecanismo tiene un porcentaje crítico mayor a ${umbral} %.`;
+  } else {
+    const nombres = posibles.map((p) => p.nombre.toLowerCase());
+    const lista =
+      nombres.length === 1
+        ? nombres[0]
+        : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+    veredictoTitulo = `${posibles.length} de ${veredictosActivos.length} mecanismos cinemáticamente posibles`;
+    veredictoTexto = `Posibles: ${lista} (porcentaje crítico mayor a ${umbral} %).`;
+  }
+
+  const advertenciaOblicuo =
+    oblicuo && oblicuo.posible
+      ? `Advertencia: toppling oblicuo (C2) con ${oblicuo.porcentaje.toFixed(1)} % de intersecciones críticas, mayor a ${umbral} %.`
+      : '';
 
   const hasPendingChanges = Boolean(
     analisis &&
@@ -947,20 +947,7 @@ export default function App() {
                   className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <ImageIcon className="w-4 h-4 text-[#881337] shrink-0" />
-                  <span>Preparar PNG de la vista activa (300 dpi)</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!analisis || exporting !== null}
-                  onClick={() => {
-                    handleExportCunaExcel();
-                    setShowDescargas(false);
-                  }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span>Preparar Cuña (Excel Dips)</span>
+                  <span>Preparar PNG de la vista activa ({opciones.dpi_exportar ?? 300} dpi)</span>
                 </button>
               </div>
             )}
@@ -1065,97 +1052,156 @@ export default function App() {
               </div>
             )}
 
-            {/* Banner de Resumen */}
-            {analisis && (
-              <div className="bg-[#FFF4E5] border-b border-[#FFE2B8] px-4 py-2 text-xs text-slate-800 shrink-0 select-none">
-                <div className="flex items-center justify-between text-[11px] text-slate-600 mb-0.5 font-mono">
-                  <span className="font-semibold text-slate-700">Resumen del análisis cinemático</span>
-                  <span>
-                    Talud {analisis.contexto.buz}° / {analisis.contexto.dirbuz}° · φ ={' '}
-                    {analisis.contexto.phi}° · {analisis.contexto.n_datos} discontinuidades ·{' '}
-                    {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones ·{' '}
-                    {analisis.contexto.filtro ? analisis.contexto.filtro.split(' · N =')[0] : 'Sin filtro'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {posibles.length > 0 ? (
-                    <AlertTriangle className="w-4 h-4 text-[#D9622B] shrink-0" />
-                  ) : (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  )}
-                  <div className="truncate">
-                    <span className="font-bold text-slate-900">
-                      {posibles.length > 0
-                        ? `${posibles.length} de ${veredictosActivos.length} mecanismos cinemáticamente posibles`
-                        : 'Ningún mecanismo excede el umbral crítico'}
-                    </span>
-                    <span className="text-slate-600 ml-2">
-                      {posibles.length > 0
-                        ? `Posibles: ${posibles.map((p) => p.nombre.toLowerCase()).join(' y ')} (porcentaje crítico mayor a ${umbral} %).`
-                        : `(umbral actual ${umbral} %)`}
-                    </span>
+            {analisis ? (
+              <div className="flex-1 min-h-0 overflow-y-auto p-5">
+                {/* 1. Encabezado del Resumen */}
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-[#18202A] tracking-tight mb-1 font-sans">
+                    Resumen del análisis cinemático
+                  </h3>
+                  <div className="ac-contexto">
+                    Talud {analisis.contexto.buz}° / {String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = {parametros.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · {analisis.contexto.filtro ? analisis.contexto.filtro.split(' · N =')[0] : 'Sin filtro'}
+                  </div>
+
+                  {/* Veredicto HTML */}
+                  <div className={`ac-veredicto ${posibles.length > 0 ? 'ac-veredicto-si' : 'ac-veredicto-no'}`}>
+                    {posibles.length > 0 ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B93815" strokeWidth="2" aria-hidden="true" className="shrink-0">
+                        <path d="M12 3l9.5 17h-19z" />
+                        <path d="M12 10v4" />
+                        <path d="M12 17.2v.1" />
+                      </svg>
+                    ) : (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F4E9C" strokeWidth="2" aria-hidden="true" className="shrink-0">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M8 12.5l2.7 2.7L16 9.8" />
+                      </svg>
+                    )}
+                    <div>
+                      <b>{veredictoTitulo}</b>
+                      <br />
+                      <span>{veredictoTexto}</span>
+                      {advertenciaOblicuo && (
+                        <>
+                          <br />
+                          <span className="ac-advertencia">⚠ {advertenciaOblicuo}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Pestañas de Vistas */}
-            <div className="h-8 shrink-0 bg-slate-50 border-b border-slate-200 px-3 flex items-center justify-center gap-1 select-none overflow-x-auto">
-              {VISTAS.map((v) => {
-                const active = vista === v.id;
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setVista(v.id)}
-                    className={`px-3 py-1 text-xs rounded border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      active
-                        ? 'bg-white border-slate-300 text-slate-900 font-bold shadow-2xs'
-                        : 'bg-transparent border-transparent hover:bg-slate-200/60 text-slate-600 font-medium'
-                    }`}
-                  >
-                    {v.label}
-                  </button>
-                );
-              })}
-            </div>
+                {/* 2. Cuerpo: col_tarjetas (izquierda) y col_figura (derecha) */}
+                <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6 items-start pb-6">
+                  {/* Columna Tarjetas Apiladas (col_tarjetas) */}
+                  <div className="space-y-3 shrink-0">
+                    {veredictosActivos.map((v) => {
+                      const active = vista === v.clave;
+                      const si = v.posible;
+                      const insignia = si ? 'SÍ' : 'NO';
+                      const claseIns = si ? 'ac-insignia-si' : 'ac-insignia-no';
+                      let claseTar = si ? 'ac-tarjeta-si' : 'ac-tarjeta-no';
+                      const relleno = si ? '#D9622B' : '#8FB0DA';
+                      const barra = Math.min(100, (v.porcentaje / 50) * 100);
+                      const marca = Math.min(100, (umbral / 50) * 100);
 
-            {/* Título de la vista actual */}
-            <div className="text-center pt-2 pb-0.5 shrink-0">
-              <h2 className="text-sm font-bold text-slate-800 tracking-tight">
-                {vista === 'general' && `Estereograma general · Talud ${talud.buz}-${talud.dirbuz} · N = ${rows.length}`}
-                {vista === 'planar' && `Rotura planar · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
-                {vista === 'cuna' && `Rotura en cuña · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
-                {vista === 'flexural' && `Toppling flexural · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
-                {vista === 'directo' && `Toppling directo · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
-                {vista === 'roseta' && `Diagrama de roseta · N = ${rows.length}`}
-              </h2>
-              <p className="text-[10px] text-slate-400 font-mono">
-                {filtro.tipos ? `Filtro: ${filtro.tipos.join(', ')}` : 'Sin filtro'} · N = {rows.length}
-              </p>
-            </div>
+                      let extra = null;
+                      if (v.clave === 'directo' && oblicuo) {
+                        if (oblicuo.posible && !si) {
+                          claseTar = 'ac-tarjeta-adv';
+                        }
+                        extra = (
+                          <>
+                            <div className="ac-sub">
+                              Toppling oblicuo (C2): <b>{oblicuo.porcentaje.toFixed(1)} %</b> · {oblicuo.detalles[0]}
+                            </div>
+                            {oblicuo.posible && (
+                              <div className="ac-advertencia">
+                                ⚠ Advertencia: C2 mayor a {umbral} %
+                              </div>
+                            )}
+                          </>
+                        );
+                      }
 
-            {/* Lienzo del Estereograma */}
-            <div className="flex-1 min-h-0 relative flex items-center justify-center p-2 overflow-hidden bg-white">
-              {(running || redrawing) && (
-                <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded bg-slate-900/85 text-white text-xs font-mono shadow flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                  <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
-                </div>
-              )}
-              {figuraSrc ? (
-                <div className="flex flex-col items-center w-full my-auto">
-                  <img
-                    src={figuraSrc}
-                    alt={`Estereograma ${vista}`}
-                    className="max-w-full max-h-[56vh] object-contain select-none"
-                  />
-                  {analisis && (
-                    <div className="w-full max-w-2xl mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 shadow-2xs text-left select-text">
-                      <div className="font-semibold text-slate-800 mb-1 text-xs tracking-tight">
-                        Notas de los resultados
-                      </div>
-                      <ol className="list-decimal pl-4 space-y-1 text-slate-600 text-[11px] leading-relaxed">
+                      return (
+                        <div
+                          key={v.clave}
+                          onClick={() => setVista(v.clave as VistaKey)}
+                          className={`ac-tarjeta ${claseTar} ${
+                            active ? 'ring-2 ring-[#B93815]/60 shadow-md' : 'hover:shadow-xs'
+                          }`}
+                        >
+                          <div className="ac-cab">
+                            <span className="ac-nombre">{v.nombre}</span>
+                            <span className={`ac-insignia ${claseIns}`}>{insignia}</span>
+                          </div>
+                          <div className="ac-pct">
+                            <span className="ac-num">{v.porcentaje.toFixed(1)}</span>
+                            <span className="ac-unid">% crítico</span>
+                          </div>
+                          <div className="ac-n">{v.detalles[0]}</div>
+                          <div className="ac-barra">
+                            <div
+                              className="ac-relleno"
+                              style={{ width: `${barra.toFixed(1)}%`, background: relleno }}
+                            />
+                            <div className="ac-umbral" style={{ left: `${marca.toFixed(1)}%` }} />
+                          </div>
+                          {extra}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Columna Estereograma y Notas (col_figura) */}
+                  <div className="flex flex-col min-w-0">
+                    {/* Selector de vistas */}
+                    <div className="flex items-center justify-start gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 mb-3 overflow-x-auto select-none">
+                      {VISTAS.map((v) => {
+                        const active = vista === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => setVista(v.id)}
+                            className={`px-3 py-1.5 text-xs rounded-md transition-all font-medium cursor-pointer whitespace-nowrap ${
+                              active
+                                ? 'bg-white text-slate-900 font-bold shadow-xs border border-slate-200'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                            }`}
+                          >
+                            {v.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Contenedor del Estereograma */}
+                    <div className="relative flex items-center justify-center p-3 bg-white border border-slate-200 rounded-xl min-h-[460px] shadow-2xs overflow-hidden">
+                      {(running || redrawing) && (
+                        <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded bg-slate-900/85 text-white text-xs font-mono shadow flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                          <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
+                        </div>
+                      )}
+                      {figuraSrc ? (
+                        <img
+                          src={figuraSrc}
+                          alt={`Estereograma ${vista}`}
+                          className="max-w-full max-h-[64vh] object-contain select-none"
+                        />
+                      ) : (
+                        <div className="text-xs text-slate-400 font-mono">
+                          {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notas de los resultados (debajo del estereograma a lo ancho) */}
+                    <div className="ac-notas">
+                      <div className="ac-notas-tit">Notas de los resultados</div>
+                      <ol>
                         <li>
                           El porcentaje crítico de discontinuidades corresponde a la fracción de polos o intersecciones que están dentro de la zona crítica. No corresponde a un factor de seguridad ni a una probabilidad de falla del mecanismo de rotura.
                         </li>
@@ -1164,10 +1210,12 @@ export default function App() {
                         </li>
                       </ol>
                     </div>
-                  )}
+                  </div>
                 </div>
-              ) : rows.length === 0 ? (
-                <div className="text-center p-6 max-w-md select-none">
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-6 bg-slate-50/50">
+                <div className="text-center p-8 max-w-md bg-white border border-slate-200 rounded-xl shadow-xs select-none">
                   <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
                     <Upload className="w-5 h-5 text-slate-500" />
                   </div>
@@ -1176,15 +1224,11 @@ export default function App() {
                     Suba un archivo CSV o Excel desde el paso <strong className="text-slate-700">1 · Datos de entrada</strong> en el panel lateral para ejecutar el análisis.
                   </p>
                 </div>
-              ) : (
-                <div className="text-xs text-slate-400 font-mono">
-                  {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Barra de estado inferior */}
-            <footer className="h-5 shrink-0 bg-slate-50 border-t border-slate-200 px-3 flex items-center justify-between text-[10.5px] text-slate-500 font-mono select-none">
+            <footer className="h-6 shrink-0 bg-slate-50 border-t border-slate-200 px-4 flex items-center justify-between text-[11px] text-slate-500 font-mono select-none">
               <div className="truncate">
                 {analisis
                   ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${talud.buz}°/${String(talud.dirbuz).padStart(3, '0')}° · φ = ${parametros.phi}°`
@@ -1195,18 +1239,6 @@ export default function App() {
               </div>
             </footer>
           </main>
-
-          {/* Panel Derecho: Mecanismos de falla */}
-          <RightInspector
-            data={analisis}
-            vista={vista}
-            umbral={umbral}
-            onSelectVista={setVista}
-            onExportTableCsv={handleExportTableCsv}
-            onExportCunaExcel={handleExportCunaExcel}
-            collapsed={inspectorCollapsed}
-            onToggleCollapse={() => setInspectorCollapsed((c) => !c)}
-          />
         </div>
       )}
 
