@@ -20,10 +20,12 @@ def marcador(tipo, op, ctx):
     return MARCADORES[tipos.index(tipo) % len(MARCADORES)] if tipo in tipos else "o"
 
 
-def tamanos(clases, op):
+def tamanos(clases, op, base=None):
+    """Tamaño de cada símbolo: base (por defecto op.tamano_simbolo) × factor de la clase de persistencia."""
+    base = float(op.tamano_simbolo if base is None else base)
     if not op.tamano_por_persistencia:
-        return np.full(len(clases), float(op.tamano_simbolo))
-    return op.tamano_simbolo * pd.Series(np.asarray(clases, dtype=object)).map(TAM_CLASE).fillna(1.0).to_numpy(float)
+        return np.full(len(clases), base)
+    return base * pd.Series(np.asarray(clases, dtype=object)).map(TAM_CLASE).fillna(1.0).to_numpy(float)
 
 
 def puntos(ax, op, trend, plunge, color, marker="o", s=30, z=3, ec="k", lw=0.5):
@@ -40,15 +42,13 @@ def seleccion(opcion, critico):
     return np.ones(len(critico), bool) if o == "todos" else np.zeros(len(critico), bool)
 
 
-MAX_ETIQUETAS = 40
+MAX_ETIQUETAS = 49          # rótulos de ID solo con menos de 50 elementos
 
 
 def etiquetar(ax, op, trend, plunge, textos):
     """Etiquetas junto a los puntos; si se superponen, se desplazan y se unen al punto con una línea fina.
-    Con más de MAX_ETIQUETAS puntos no se rotula (sería ilegible) y se avisa en la figura."""
+    Con más de MAX_ETIQUETAS puntos no se rotula (sería ilegible)."""
     if len(np.atleast_1d(np.asarray(trend))) > MAX_ETIQUETAS:
-        ax.text(0.0, -0.02, f"Etiquetas omitidas: más de {MAX_ETIQUETAS} elementos (ver tablas)", transform=ax.transAxes,
-                fontsize=op.tamano_fuente - 3, color="0.35", ha="left", va="top")
         return
     x, y = proyectar(np.atleast_1d(np.asarray(trend, float)), np.atleast_1d(np.asarray(plunge, float)),
                      op.proyeccion, op.hemisferio)
@@ -71,12 +71,12 @@ def capa_polos(ax, op, ctx, tabla, critico, color_crit=None):
     critico = np.asarray(critico, bool)
     for es_crit, color in ((False, op.colores["no_critico"]), (True, color_crit or op.colores["critico"])):
         sub = tabla[critico == es_crit]
-        f = float(np.clip(np.sqrt(300 / max(len(tabla), 1)), 0.3, 1.0))   # muchos polos → símbolos menores
-        for tipo, s2 in sub.groupby("Tipo", sort=False):
+        for tipo, s2 in sub.groupby("Tipo", sort=False):   # tamaño elegido por el usuario (op.tamano_polo)
             puntos(ax, op, *polo_de_plano(s2.Buz, s2.DirBuz), color, marcador(tipo, op, ctx),
-                   f * tamanos(s2.Clase_P, op), z=4 if es_crit else 3, lw=0.5 if f >= 0.6 else 0.25)
-    sel = seleccion(op.etiquetas_polos, critico)
-    etiquetar(ax, op, *polo_de_plano(tabla.Buz[sel], tabla.DirBuz[sel]), tabla.ID[sel])
+                   tamanos(s2.Clase_P, op, op.tamano_polo), z=4 if es_crit else 3,
+                   lw=0.5 if op.tamano_polo >= 12 else 0.25)
+    if op.etiquetas_polos == "todos" and len(tabla) <= MAX_ETIQUETAS:   # interruptor «Etiquetas de los polos»
+        etiquetar(ax, op, *polo_de_plano(tabla.Buz, tabla.DirBuz), tabla.ID)
 
 
 def capa_planos(ax, op, tabla, grupos):
@@ -127,8 +127,9 @@ def L(color, label, ls="-", lw=1.4):
     return Line2D([], [], color=color, lw=lw, ls=ls, label=label)
 
 
-def P(color, label, alpha=0.45):
-    return Patch(facecolor=color, edgecolor=color, alpha=alpha, label=label)
+def P(color, label, alpha=0.62):
+    """Cuadro de leyenda con el mismo color y transparencia que la zona dibujada."""
+    return Patch(facecolor=color, edgecolor="#7a1f1f", alpha=alpha, label=label, lw=0.6)
 
 
 def ley_tipos(op, ctx):
@@ -147,7 +148,15 @@ def ley_planos(op, grupos):
     return h
 
 
-def leyenda(ax, op, handles):
+def leyenda(ax, op, polos=(), zonas=(), intersecciones=(), planos=()):
+    """Leyenda reducida, siempre en el mismo orden:
+    polos (crítico / no crítico) · plano del talud · zonas críticas · densidad de polos · intersecciones · planos.
+    No incluye persistencia, tipos ni curvas auxiliares (cono de fricción, límites laterales, etc.)."""
+    handles = list(polos) + [L(op.colores["talud"], "Plano del talud", lw=1.8)] + list(zonas)
+    if getattr(ax, "_contornos_polos", False):
+        from matplotlib import colormaps
+        handles.append(Patch(facecolor=colormaps[op.mapa_color_mecanismos](0.6), alpha=0.7, label="Densidad de polos"))
+    handles += list(intersecciones) + list(planos)
     if ubicacion(op) != "ninguna" and handles:
         ax.legend(handles=handles, **kw_leyenda(op))
 

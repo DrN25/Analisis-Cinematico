@@ -44,12 +44,11 @@ def resumen_porcentajes(res):
         ("   zona primaria", "Intersecciones", Ni, res.cuna.Zona_Primaria.sum()),
         ("   zona secundaria", "Intersecciones", Ni, res.cuna.Zona_Secundaria.sum()),
         ("Toppling flexural", "Polos", N, res.flexural.Critico.sum()),
-        ("Toppling directo – aristas (zonas 1+2)", "Intersecciones", Ni, res.directo_aristas.Directo.sum()),
-        ("Toppling oblicuo (zona 3)", "Intersecciones", Ni, res.directo_aristas.Oblicuo.sum()),
-        ("Toppling directo – total zonas 1–3 (C1 en Dips)", "Intersecciones", Ni, res.directo_aristas.C1_Dips.sum()),
+        ("Toppling directo – C1", "Intersecciones", Ni, res.directo_aristas.Directo.sum()),
+        ("Toppling oblicuo – C2", "Intersecciones", Ni, res.directo_aristas.Oblicuo.sum()),
         ("Toppling directo – planos base", "Polos", N, res.directo_base.Critico.sum()),
-        ("   «Base» (φ ≤ ψ ≤ ψs, ±LL)", "Polos", N, (res.directo_base.Etiqueta_Dips == "Base").sum()),
-        ("   «Sliding+Base» (ψ ≤ φ)", "Polos", N, (res.directo_base.Etiqueta_Dips == "Sliding+Base").sum()),
+        ("   «Base» (φ ≤ ψ ≤ ψs, ±LL)", "Polos", N, (res.directo_base.Grupo_Base == "Base").sum()),
+        ("   «Base con deslizamiento» (ψ ≤ φ)", "Polos", N, (res.directo_base.Grupo_Base == "Base con deslizamiento").sum()),
     ]
     t = pd.DataFrame(filas, columns=["Mecanismo", "Se evalúa sobre", "Total", "Críticos"])
     t["Críticos"] = t["Críticos"].astype(int)

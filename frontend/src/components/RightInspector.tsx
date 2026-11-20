@@ -25,12 +25,7 @@ interface Props {
   onToggleCollapse?: () => void;
 }
 
-const MECANISMO_COLOR: Record<VeredictoMecanismo['clave'], string> = {
-  planar: '#991B1B',
-  cuna: '#881337',
-  flexural: '#B45309',
-  directo: '#334155',
-};
+
 
 const CompactTable: React.FC<{
   rows: TableRow[];
@@ -154,10 +149,10 @@ export const RightInspector: React.FC<Props> = ({
 
   if (!data) {
     return (
-      <aside className="w-[480px] min-w-[480px] max-w-[480px] shrink-0 bg-slate-50 border-l border-slate-200 flex flex-col min-h-0 p-3 select-none">
+      <aside className="w-[350px] min-w-[340px] max-w-[360px] shrink-0 bg-slate-50 border-l border-slate-200 flex flex-col min-h-0 p-3 select-none">
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-          <span className="text-xs font-semibold uppercase tracking-tight text-slate-600">
-            Inspector de Mecanismos
+          <span className="text-xs font-semibold tracking-tight text-slate-800">
+            Mecanismos de falla
           </span>
           {onToggleCollapse && (
             <button
@@ -185,12 +180,12 @@ export const RightInspector: React.FC<Props> = ({
   const t = data.tablas;
 
   return (
-    <aside className="w-[480px] min-w-[480px] max-w-[480px] shrink-0 bg-slate-50 border-l border-slate-200 flex flex-col min-h-0 p-3 gap-2.5 select-none overflow-hidden">
+    <aside className="w-[350px] min-w-[340px] max-w-[360px] shrink-0 bg-slate-50 border-l border-slate-200 flex flex-col min-h-0 p-3 gap-2.5 select-none overflow-hidden">
       {/* Cabecera del Inspector */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-slate-800">
-            Inspector de Mecanismos
+            Mecanismos de falla
           </span>
           <span className="text-[11px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-mono">
             Umbral {umbral}%
@@ -213,64 +208,59 @@ export const RightInspector: React.FC<Props> = ({
         {veredictos.map((v) => {
           const active = vista === v.clave;
           const isTop = maxPct > 0 && v.porcentaje === maxPct;
-          const accent = MECANISMO_COLOR[v.clave];
           const fillPct = Math.min(100, (v.porcentaje / escala) * 100);
           return (
             <button
               key={v.clave}
               type="button"
               onClick={() => onSelectVista(v.clave)}
-              style={{ borderTopWidth: '3px', borderTopColor: accent }}
               className={`text-left rounded-lg p-2.5 border transition-all ${
-                isTop
-                  ? 'bg-rose-50/70 border-[#881337]/50 shadow-sm'
+                v.posible
+                  ? 'bg-[#FFF8F6] border-[#F0C4AC] hover:border-[#E2A88B]'
                   : 'bg-white border-slate-200 hover:border-slate-300'
-              } ${active ? 'ring-2 ring-[#881337]/40 border-[#881337]' : ''}`}
+              } ${active ? 'ring-2 ring-[#B93815]/50 border-[#B93815]' : ''}`}
             >
               <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-semibold text-slate-800 truncate">
+                <span className="text-[11px] font-semibold text-slate-800 truncate">
                   {v.nombre}
                 </span>
                 <span
-                  style={
+                  className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
                     v.posible
-                      ? { backgroundColor: accent, color: '#FFFFFF' }
-                      : undefined
-                  }
-                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
-                    v.posible ? '' : 'bg-slate-100 text-slate-600'
+                      ? 'bg-[#B93815] text-white'
+                      : 'bg-[#E7F0FA] text-[#1F4E9C]'
                   }`}
                 >
                   {v.posible ? 'SÍ' : 'NO'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-1 mt-1">
-                <div className="flex items-baseline gap-1 font-mono">
-                  <span className="text-lg font-bold text-slate-900 leading-none">
+                <div className="flex items-baseline gap-0.5 font-mono">
+                  <span className="text-xl font-bold text-slate-900 leading-none">
                     {v.porcentaje.toFixed(1)}
                   </span>
-                  <span className="text-xs text-slate-500 font-sans">%</span>
+                  <span className="text-[11px] text-slate-500 font-sans">%</span>
                 </div>
                 {isTop && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-[#881337]/15 text-[#881337]">
+                  <span className="text-[9px] font-semibold px-1 py-0.2 rounded bg-[#B93815]/15 text-[#B93815]">
                     Mayor %
                   </span>
                 )}
               </div>
-              <div className="relative h-1.5 bg-slate-200 rounded-full my-1.5">
+              <div className="relative h-1.5 bg-[#E6EAEE] rounded-full my-1.5">
                 <div
                   className="h-1.5 rounded-full transition-all"
                   style={{
                     width: `${fillPct}%`,
-                    backgroundColor: v.posible ? accent : '#94A3B8',
+                    backgroundColor: v.posible ? '#D9622B' : '#8FB0DA',
                   }}
                 />
                 <div
-                  className="absolute -top-0.5 w-0.5 h-2.5 bg-slate-900"
+                  className="absolute -top-0.5 w-0.5 h-2.5 bg-[#18202A]"
                   style={{ left: `${marcaPct}%` }}
                 />
               </div>
-              <div className="text-[11px] text-slate-500 truncate font-mono">{v.detalles[0]}</div>
+              <div className="text-[10.5px] text-slate-500 truncate font-mono">{v.detalles[0]}</div>
             </button>
           );
         })}

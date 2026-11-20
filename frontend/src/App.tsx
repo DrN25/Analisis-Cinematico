@@ -3,19 +3,15 @@ import {
   AlertTriangle,
   Archive,
   CheckCircle2,
-  Columns,
+  ChevronDown,
+  ChevronUp,
   FileSpreadsheet,
   Image as ImageIcon,
   KeyRound,
   LogOut,
-  Maximize2,
   Play,
-  RotateCcw,
   Shield,
-  Sliders,
-  Table2,
   Upload,
-  ZoomIn,
 } from 'lucide-react';
 import {
   ApiError,
@@ -47,15 +43,14 @@ import {
   VistaKey,
 } from './types';
 
-type MenuKey = 'archivo' | 'editar' | 'analisis' | 'ver' | 'herramientas' | 'ayuda';
 
 const VISTAS: { id: VistaKey; label: string }[] = [
-  { id: 'general', label: 'Estereograma General' },
-  { id: 'planar', label: 'Rotura Planar' },
-  { id: 'cuna', label: 'Rotura en Cuña' },
-  { id: 'flexural', label: 'Toppling Flexural' },
-  { id: 'directo', label: 'Toppling Directo' },
-  { id: 'roseta', label: 'Roseta de Rumbos' },
+  { id: 'general', label: 'General' },
+  { id: 'planar', label: 'Rotura planar' },
+  { id: 'cuna', label: 'Rotura en cuña' },
+  { id: 'flexural', label: 'Toppling flexural' },
+  { id: 'directo', label: 'Toppling directo' },
+  { id: 'roseta', label: 'Roseta' },
 ];
 
 export default function App() {
@@ -64,7 +59,6 @@ export default function App() {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
 
   const [filename, setFilename] = useState('discontinuidades_ejemplo.csv');
   const [rows, setRows] = useState<DiscontinuidadRow[]>([]);
@@ -88,7 +82,6 @@ export default function App() {
 
   const [analisis, setAnalisis] = useState<AnalisisResponse | null>(null);
   const [figuraSrc, setFiguraSrc] = useState<string | null>(null);
-  const [zoomFull, setZoomFull] = useState(false);
 
   const [running, setRunning] = useState(false);
   const [redrawing, setRedrawing] = useState(false);
@@ -102,8 +95,13 @@ export default function App() {
   const [showPwd, setShowPwd] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<'analisis' | 'referencias'>('analisis');
+  const [showDescargas, setShowDescargas] = useState(false);
+  const [showMasOpciones, setShowMasOpciones] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const menuBarRef = useRef<HTMLDivElement | null>(null);
+  const descargasRef = useRef<HTMLDivElement | null>(null);
+  const masOpcionesRef = useRef<HTMLDivElement | null>(null);
   const skipNextRedrawRef = useRef(false);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -124,8 +122,11 @@ export default function App() {
   // Cierre de menús al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuBarRef.current && !menuBarRef.current.contains(e.target as Node)) {
-        setActiveMenu(null);
+      if (descargasRef.current && !descargasRef.current.contains(e.target as Node)) {
+        setShowDescargas(false);
+      }
+      if (masOpcionesRef.current && !masOpcionesRef.current.contains(e.target as Node)) {
+        setShowMasOpciones(false);
       }
     };
     window.addEventListener('mousedown', handleClickOutside);
@@ -454,670 +455,516 @@ export default function App() {
         </div>
       )}
 
-      {/* 1. BARRA DE MENÚ SUPERIOR DE ESCRITORIO */}
-      <nav
-        ref={menuBarRef}
-        className="h-6 shrink-0 bg-slate-100 border-b border-slate-300 px-2 flex items-center justify-between text-[11px] text-slate-700 relative z-40"
-      >
-        <div className="flex items-center gap-0.5">
-          {/* Menú Archivo */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setActiveMenu(activeMenu === 'archivo' ? null : 'archivo')}
-              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
-                activeMenu === 'archivo' ? 'bg-slate-300' : ''
-              }`}
-            >
-              Archivo
-            </button>
-            {activeMenu === 'archivo' && (
-              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    fileInputRef.current?.click();
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Subir archivo…</span>
-                </button>
-                <div className="h-px bg-slate-200 my-1" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleExport('excel');
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Descargar en Excel</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleExport('png');
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <ImageIcon className="w-3.5 h-3.5 text-[#881337]" />
-                  <span>Descargar en PNG</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleExport('zip');
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <Archive className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Descargar en ZIP</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleExportCunaExcel();
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Descargar cuña en Excel</span>
-                </button>
-                <div className="h-px bg-slate-200 my-1" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleLogout();
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-rose-700 hover:text-white text-rose-700 flex items-center gap-2"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Cerrar sesión</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Menú Editar */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setActiveMenu(activeMenu === 'editar' ? null : 'editar')}
-              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
-                activeMenu === 'editar' ? 'bg-slate-300' : ''
-              }`}
-            >
-              Editar
-            </button>
-            {activeMenu === 'editar' && (
-              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditor(true);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <Table2 className="w-3.5 h-3.5" />
-                  <span>Tabla de datos…</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPwd(true);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Cambiar contraseña…</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Menú Análisis */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setActiveMenu(activeMenu === 'analisis' ? null : 'analisis')}
-              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
-                activeMenu === 'analisis' ? 'bg-slate-300' : ''
-              }`}
-            >
-              Análisis
-            </button>
-            {activeMenu === 'analisis' && (
-              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    runAnalysis();
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2 font-medium"
-                >
-                  <Play className="w-3.5 h-3.5 text-[#881337]" />
-                  <span>Recalcular (F5)</span>
-                </button>
-                <div className="h-px bg-slate-200 my-1" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUmbral(10);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
-                >
-                  <span>Umbral crítico: 10% (Dips)</span>
-                  {umbral === 10 && <span className="font-bold text-[#881337]">✓</span>}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUmbral(15);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
-                >
-                  <span>Umbral crítico: 15%</span>
-                  {umbral === 15 && <span className="font-bold text-[#881337]">✓</span>}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUmbral(5);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
-                >
-                  <span>Umbral crítico: 5%</span>
-                  {umbral === 5 && <span className="font-bold text-[#881337]">✓</span>}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Menú Ver */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setActiveMenu(activeMenu === 'ver' ? null : 'ver')}
-              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
-                activeMenu === 'ver' ? 'bg-slate-300' : ''
-              }`}
-            >
-              Ver
-            </button>
-            {activeMenu === 'ver' && (
-              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSidebarCollapsed((c) => !c);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
-                >
-                  <span>Panel de opciones (Izquierda)</span>
-                  {!sidebarCollapsed && <span className="font-bold text-[#881337]">✓</span>}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInspectorCollapsed((c) => !c);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
-                >
-                  <span>Inspector (Derecha)</span>
-                  {!inspectorCollapsed && <span className="font-bold text-[#881337]">✓</span>}
-                </button>
-                <div className="h-px bg-slate-200 my-1" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setZoomFull(false);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white"
-                >
-                  Ajustar gráfico
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setZoomFull(true);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white"
-                >
-                  Ampliar gráfico
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Menú Herramientas (si es admin) */}
-          {user.rol_nombre === 'admin' && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setActiveMenu(activeMenu === 'herramientas' ? null : 'herramientas')}
-                className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
-                  activeMenu === 'herramientas' ? 'bg-slate-300' : ''
-                }`}
-              >
-                Herramientas
-              </button>
-              {activeMenu === 'herramientas' && (
-                <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAdmin(true);
-                      setActiveMenu(null);
-                    }}
-                    className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
-                  >
-                    <Shield className="w-3.5 h-3.5 text-[#881337]" />
-                    <span>Administración y logs…</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Menú Ayuda */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setActiveMenu(activeMenu === 'ayuda' ? null : 'ayuda')}
-              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
-                activeMenu === 'ayuda' ? 'bg-slate-300' : ''
-              }`}
-            >
-              Ayuda
-            </button>
-            {activeMenu === 'ayuda' && (
-              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowHelp(true);
-                    setActiveMenu(null);
-                  }}
-                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
-                >
-                  <span>Guía y referencias Dips</span>
-                  <span className="text-[10px] text-slate-400 font-mono">F1</span>
-                </button>
-              </div>
-            )}
-          </div>
+      {/* 1. BARRA SUPERIOR: Pestañas [ Análisis ] [ Referencias ] y Sesión de usuario */}
+      <nav className="h-8 shrink-0 bg-slate-100 border-b border-slate-300 px-3 flex items-center justify-between text-xs select-none">
+        {/* Pestañas principales */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('analisis')}
+            className={`px-3 py-1 rounded text-xs transition-colors cursor-pointer ${
+              activeTab === 'analisis'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
+            }`}
+          >
+            Análisis
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('referencias')}
+            className={`px-3 py-1 rounded text-xs transition-colors cursor-pointer ${
+              activeTab === 'referencias'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
+            }`}
+          >
+            Referencias
+          </button>
         </div>
 
-        {/* Info usuario derecha del menú */}
-        <div className="flex items-center gap-2 font-mono text-[10.5px] text-slate-500">
-          <span>{user.usuario} ({user.rol_nombre})</span>
-        </div>
-      </nav>
-
-      {/* 2. BARRA DE HERRAMIENTAS RIBBON */}
-      <div className="h-9 shrink-0 bg-[#F1F3F5] border-b border-slate-300 px-3 flex items-center justify-between text-xs select-none">
-        {/* Acciones de herramientas */}
-        <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto">
-          <div className="flex items-center gap-2 mr-2 shrink-0">
-            <img src="/logo.png" alt="Cinemático" className="w-5 h-5 object-contain" />
-            <span className="font-bold text-xs text-slate-900 tracking-tight whitespace-nowrap">
-              ANÁLISIS CINEMÁTICO
-            </span>
+        {/* Info usuario y sesión derecha */}
+        <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] text-slate-700 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="font-semibold">{user.usuario}</span>
+            <span className="text-slate-400">({user.rol_nombre})</span>
           </div>
 
-          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
-
           <button
             type="button"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
-            title="Subir archivo"
+            onClick={() => setShowPwd(true)}
+            className="px-2 py-0.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+            title="Cambiar contraseña"
           >
-            <Upload className="w-3.5 h-3.5 text-slate-600" />
-            <span>{uploading ? 'Leyendo…' : 'Subir archivo'}</span>
+            <KeyRound className="w-3 h-3 text-slate-500" />
+            <span className="hidden sm:inline">Contraseña</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowEditor(true)}
-            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
-            title="Ver tabla de discontinuidades"
-          >
-            <Table2 className="w-3.5 h-3.5 text-slate-600" />
-            <span>Tabla de datos ({rows.length})</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={running}
-            onClick={() => runAnalysis()}
-            className="px-3.5 py-1 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-semibold flex items-center gap-1.5 shadow-sm transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
-            title="Recalcular análisis"
-          >
-            <Play className="w-3 h-3 fill-white" />
-            <span>{running ? 'Calculando…' : 'Calcular'}</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={rows.length === 0 && !analisis}
-            onClick={handleClearData}
-            className="px-2.5 py-1 border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-slate-50/80 rounded font-medium flex items-center gap-1.5 shadow-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
-            title="Limpiar datos y análisis actuales"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-            <span>Limpiar</span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
-
-          <button
-            type="button"
-            onClick={() => setZoomFull(false)}
-            className={`p-1 border rounded text-slate-700 shadow-xs shrink-0 ${
-              !zoomFull ? 'bg-slate-200/90 border-slate-400 font-semibold' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
-            }`}
-            title="Ajustar a ventana"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setZoomFull(true)}
-            className={`p-1 border rounded text-slate-700 shadow-xs shrink-0 ${
-              zoomFull ? 'bg-slate-200/90 border-slate-400 font-semibold' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
-            }`}
-            title="Ampliar gráfico"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-
-          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
-
-          {/* Exportaciones */}
-          <button
-            type="button"
-            disabled={!analisis || exporting !== null}
-            onClick={() => handleExport('excel')}
-            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
-            title="Descargar en Excel"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-            <span>{exporting === 'excel' ? '…' : 'Excel'}</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!analisis || exporting !== null}
-            onClick={() => handleExport('png')}
-            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
-            title="Descargar en PNG"
-          >
-            <ImageIcon className="w-3.5 h-3.5 text-slate-600" />
-            <span>{exporting === 'png' ? '…' : 'PNG'}</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!analisis || exporting !== null}
-            onClick={() => handleExport('zip')}
-            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
-            title="Descargar en ZIP"
-          >
-            <Archive className="w-3.5 h-3.5 text-amber-700" />
-            <span>{exporting === 'zip' ? '…' : 'ZIP'}</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={!analisis}
-            onClick={handleExportCunaExcel}
-            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
-            title="Descargar cuña en Excel"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Cuña</span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
-
-          {/* Paneles */}
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed((c) => !c)}
-            className={`p-1.5 border rounded text-slate-700 shadow-xs shrink-0 ${
-              !sidebarCollapsed ? 'bg-slate-200/90 border-slate-400' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
-            }`}
-            title="Alternar panel de opciones"
-          >
-            <Sliders className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setInspectorCollapsed((c) => !c)}
-            className={`p-1.5 border rounded text-slate-700 shadow-xs shrink-0 ${
-              !inspectorCollapsed ? 'bg-slate-200/90 border-slate-400' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
-            }`}
-            title="Alternar inspector de mecanismos"
-          >
-            <Columns className="w-3.5 h-3.5" />
-          </button>
-
-          {/* Botón Admin */}
           {user.rol_nombre === 'admin' && (
             <button
               type="button"
               onClick={() => setShowAdmin(true)}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-900 border border-slate-800 text-white rounded font-medium flex items-center gap-1 shadow-xs shrink-0"
+              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-900 border border-slate-800 text-white rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+              title="Panel de Administración"
             >
-              <Shield className="w-3.5 h-3.5 text-rose-300" />
+              <Shield className="w-3 h-3 text-rose-300" />
               <span>Admin</span>
             </button>
           )}
-        </div>
-
-        {/* Botón Cerrar Sesión claramente visible "de una" */}
-        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          <button
-            type="button"
-            onClick={() => setShowPwd(true)}
-            className="p-1 hover:bg-slate-200/70 text-slate-600 rounded transition-colors"
-            title="Cambiar contraseña"
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-          </button>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="px-2.5 py-1 text-xs font-medium border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-white rounded flex items-center gap-1.5 transition-colors shadow-xs"
+            className="px-2.5 py-0.5 border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-white rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
             title="Cerrar sesión"
           >
-            <LogOut className="w-3.5 h-3.5 text-slate-600 group-hover:text-rose-700" />
+            <LogOut className="w-3 h-3 text-slate-500" />
             <span>Cerrar sesión</span>
           </button>
         </div>
-      </div>
+      </nav>
 
-      {/* 3. CUERPO PRINCIPAL */}
-      <div className="flex-1 min-h-0 flex bg-slate-100">
-        <LeftSidebar
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
-          filename={filename}
-          totalRows={rows.length}
-          descartadasCount={descartadas.length}
-          tiposConteo={tiposConteo}
-          filtro={filtro}
-          onChangeFiltro={setFiltro}
-          talud={talud}
-          onChangeTalud={setTalud}
-          parametros={parametros}
-          onChangeParametros={setParametros}
-          umbral={umbral}
-          onChangeUmbral={setUmbral}
-          opciones={opciones}
-          onChangeOpciones={setOpciones}
-          onUploadFile={handleUploadFile}
-          onLoadEjemplo={handleLoadEjemplo}
-          onClearData={handleClearData}
-          onRunAnalysis={() => runAnalysis()}
-          onOpenEditor={() => setShowEditor(true)}
-          running={running}
-          uploading={uploading}
-        />
+      {/* 2. ENCABEZADO DE LA APLICACIÓN */}
+      <header className="h-12 shrink-0 bg-white border-b border-slate-200 px-4 flex items-center justify-between select-none">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full border border-slate-300 bg-slate-50 flex items-center justify-center p-0.5 shadow-2xs shrink-0">
+            <svg viewBox="0 0 36 36" className="w-7 h-7">
+              <circle cx="18" cy="18" r="15" fill="#f8fafc" stroke="#334155" strokeWidth="1.5" />
+              <ellipse cx="18" cy="18" rx="15" ry="7.5" fill="none" stroke="#dc2626" strokeWidth="1.5" />
+              <line x1="18" y1="3" x2="18" y2="33" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2,2" />
+              <line x1="3" y1="18" x2="33" y2="18" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2,2" />
+              <circle cx="18" cy="12" r="2" fill="#881337" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900 leading-tight">
+              Análisis cinemático de taludes
+            </h1>
+            <p className="text-[11px] text-slate-500 leading-tight">
+              Rotura planar · cuña · toppling flexural · toppling directo
+            </p>
+          </div>
+        </div>
 
-        {/* Viewport Central */}
-        <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-white">
-          {errorMsg && (
-            <div className="mx-3 mt-2 px-3 py-1.5 text-xs bg-red-50 border border-red-200 text-red-800 rounded flex items-center justify-between shrink-0 font-mono">
-              <span>{errorMsg}</span>
-              <button
-                type="button"
-                onClick={() => setErrorMsg(null)}
-                className="font-bold ml-2 text-red-700"
-              >
-                ×
-              </button>
-            </div>
-          )}
+        {/* Botones de acción derecha con popovers */}
+        <div className="flex items-center gap-2">
+          {/* Estereograma · más opciones */}
+          <div className="relative" ref={masOpcionesRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMasOpciones((v) => !v);
+                setShowDescargas(false);
+              }}
+              className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <span>Estereograma · más opciones</span>
+              {showMasOpciones ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
+            </button>
 
-          {analisis && (
-            <div className="h-7 bg-slate-50 border-b border-slate-200 px-3 flex items-center justify-between text-xs text-slate-700 shrink-0 select-none">
-              <div className="flex items-center gap-2 min-w-0">
-                {posibles.length > 0 ? (
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#881337] shrink-0" />
-                ) : (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                )}
-                <div className="truncate">
-                  <span className="font-semibold text-slate-800">
-                    {posibles.length > 0
-                      ? `${posibles.length} de ${veredictosActivos.length} mecanismos cinemáticamente posibles:`
-                      : 'Ningún mecanismo excede el umbral crítico'}
-                  </span>{' '}
-                  <span className="text-slate-600 font-mono text-[11px]">
-                    {posibles.length > 0
-                      ? posibles.map((p) => p.nombre).join(', ')
-                      : `(umbral actual ${umbral} %)`}
+            {showMasOpciones && (
+              <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2.5">
+                <div className="font-semibold text-slate-800 pb-1 border-b border-slate-100 flex items-center justify-between">
+                  <span>Opciones avanzadas</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMasOpciones(false)}
+                    className="text-slate-400 hover:text-slate-600 font-bold"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    Intervalo de la red (°)
+                  </label>
+                  <input
+                    type="number"
+                    min={2}
+                    max={30}
+                    step={2}
+                    value={opciones.intervalo_red ?? 10}
+                    onChange={(e) =>
+                      setOpciones({ ...opciones, intervalo_red: Number(e.target.value) || 10 })
+                    }
+                    className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    Espaciado de marcas (°)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={45}
+                    value={opciones.espaciado_marcas ?? 10}
+                    onChange={(e) =>
+                      setOpciones({ ...opciones, espaciado_marcas: Number(e.target.value) || 10 })
+                    }
+                    className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.circulo_perimetral ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, circulo_perimetral: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Círculo perimetral</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.cruz_central ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, cruz_central: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Cruz central</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.ejes_cruzados ?? false}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, ejes_cruzados: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Ejes cruzados</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={opciones.caja_info ?? true}
+                      onChange={(e) =>
+                        setOpciones({ ...opciones, caja_info: e.target.checked })
+                      }
+                      className="rounded text-[#881337] focus:ring-[#881337]"
+                    />
+                    <span>Cuadro de información</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Descargar resultados */}
+          <div className="relative" ref={descargasRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDescargas((v) => !v);
+                setShowMasOpciones(false);
+              }}
+              className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <span>Descargar resultados</span>
+              {showDescargas ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
+            </button>
+
+            {showDescargas && (
+              <div className="absolute right-0 top-full mt-1 w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2">
+                <p className="text-[11px] text-slate-500 italic pb-1 border-b border-slate-100 leading-snug">
+                  Los archivos se generan en tu equipo; los datos no se suben a ningún servidor externo.
+                </p>
+
+                <button
+                  type="button"
+                  disabled={!analisis || exporting !== null}
+                  onClick={() => {
+                    handleExport('excel');
+                    setShowDescargas(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Preparar Excel</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!analisis || exporting !== null}
+                  onClick={() => {
+                    handleExport('zip');
+                    setShowDescargas(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>Preparar ZIP (Excel + PNG + CSV)</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!analisis || exporting !== null}
+                  onClick={() => {
+                    handleExport('png');
+                    setShowDescargas(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <ImageIcon className="w-4 h-4 text-[#881337] shrink-0" />
+                  <span>Preparar PNG de la vista activa (300 dpi)</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!analisis || exporting !== null}
+                  onClick={() => {
+                    handleExportCunaExcel();
+                    setShowDescargas(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Preparar Cuña (Excel Dips)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* 3. VISTA PRINCIPAL O REFERENCIAS */}
+      {activeTab === 'referencias' ? (
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+          <div className="max-w-4xl mx-auto bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 border-b border-slate-200 pb-2">
+              Referencias
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Para la construcción de la aplicación se utilizó la siguiente bibliografía técnica:
+            </p>
+            <ul className="text-xs text-slate-700 space-y-3 leading-relaxed list-disc list-inside">
+              <li>
+                <strong>Diederichs, M. S. (1990).</strong> <em>DIPS: An interactive and graphical approach to the analysis of orientation based data</em> [Tesis de maestría, University of Toronto].
+              </li>
+              <li>
+                <strong>Hocking, G. (1976).</strong> A method for distinguishing between single and double plane sliding of tetrahedral wedges. <em>International Journal of Rock Mechanics and Mining Sciences & Geomechanics Abstracts, 13</em>(7), 225–226.
+              </li>
+              <li>
+                <strong>Hudson, J. A., & Harrison, J. P. (2000).</strong> <em>Engineering rock mechanics: An introduction to the principles</em>. Pergamon.
+              </li>
+              <li>
+                <strong>Kliche, C. A. (2019).</strong> <em>Rock slope stability</em> (2.ª ed.). Society for Mining, Metallurgy & Exploration.
+              </li>
+              <li>
+                <strong>Priest, S. D. (1985).</strong> <em>Hemispherical projection methods in rock mechanics</em>. George Allen & Unwin.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (s. f.-a).</strong> <em>Direct toppling</em>. Rocscience Documentation.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (s. f.-b).</strong> <em>Flexural toppling</em>. Rocscience Documentation.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (s. f.-c).</strong> <em>Kinematic analysis overview</em>. Rocscience Documentation.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (s. f.-d).</strong> <em>Planar sliding</em>. Rocscience Documentation.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (s. f.-e).</strong> <em>6 – Kinematic analysis tutorial</em>. Rocscience Documentation.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (s. f.-f).</strong> <em>Wedge sliding</em>. Rocscience Documentation.
+              </li>
+              <li>
+                <strong>Rocscience Inc. (2012).</strong> <em>Dips: Graphical and statistical analysis of orientation data. Verification manual</em>. Rocscience Inc.
+              </li>
+              <li>
+                <strong>Wyllie, D. C. (2018).</strong> <em>Rock slope engineering: Civil applications</em> (5.ª ed.). CRC Press.
+              </li>
+            </ul>
+          </div>
+        </div>
+      ) : (
+        /* 4. CUERPO PRINCIPAL DE ANÁLISIS: 3 COLUMNAS */
+        <div className="flex-1 min-h-0 flex bg-slate-100 overflow-hidden">
+          <LeftSidebar
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+            filename={filename}
+            totalRows={rows.length}
+            descartadasCount={descartadas.length}
+            tiposConteo={tiposConteo}
+            filtro={filtro}
+            onChangeFiltro={setFiltro}
+            talud={talud}
+            onChangeTalud={setTalud}
+            parametros={parametros}
+            onChangeParametros={setParametros}
+            umbral={umbral}
+            onChangeUmbral={setUmbral}
+            opciones={opciones}
+            onChangeOpciones={setOpciones}
+            onUploadFile={handleUploadFile}
+            onLoadEjemplo={handleLoadEjemplo}
+            onClearData={handleClearData}
+            onRunAnalysis={() => runAnalysis()}
+            onOpenEditor={() => setShowEditor(true)}
+            running={running}
+            uploading={uploading}
+          />
+
+          {/* Viewport Central */}
+          <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-white overflow-hidden">
+            {errorMsg && (
+              <div className="mx-3 mt-2 px-3 py-1.5 text-xs bg-red-50 border border-red-200 text-red-800 rounded flex items-center justify-between shrink-0 font-mono">
+                <span>{errorMsg}</span>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg(null)}
+                  className="font-bold ml-2 text-red-700"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Banner de Resumen */}
+            {analisis && (
+              <div className="bg-[#FFF4E5] border-b border-[#FFE2B8] px-4 py-2 text-xs text-slate-800 shrink-0 select-none">
+                <div className="flex items-center justify-between text-[11px] text-slate-600 mb-0.5 font-mono">
+                  <span className="font-semibold text-slate-700">Resumen del análisis cinemático</span>
+                  <span>
+                    Talud {talud.buz}° / {talud.dirbuz}° · φ = {parametros.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · {filtro.tipos ? `Filtro: ${filtro.tipos.join(', ')}` : 'Sin filtro'}
                   </span>
                 </div>
-              </div>
-              <span className="text-[11px] text-slate-500 font-mono shrink-0">
-                Umbral {umbral}%
-              </span>
-            </div>
-          )}
-
-          {/* Pestañas de Vistas Superiores */}
-          <div className="h-10 shrink-0 bg-slate-100 border-b border-slate-200 px-3 flex items-end gap-1.5 overflow-x-auto select-none">
-            {VISTAS.map((v) => {
-              const active = vista === v.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setVista(v.id)}
-                  className={`px-4 py-2 text-xs rounded-t border-t border-x transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                    active
-                      ? 'bg-white border-slate-300 border-t-2 border-t-[#881337] text-slate-900 font-bold -mb-px z-10 shadow-xs'
-                      : 'bg-slate-200/50 border-slate-200/60 hover:bg-slate-200 hover:text-slate-900 text-slate-600 font-medium'
-                  }`}
-                >
-                  {v.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Lienzo del Estereograma */}
-          <div className="flex-1 min-h-0 relative flex items-center justify-center p-3 overflow-auto bg-white">
-            {(running || redrawing) && (
-              <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded bg-slate-900/85 text-white text-xs font-mono shadow flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
-              </div>
-            )}
-            {figuraSrc ? (
-              <img
-                src={figuraSrc}
-                alt={`Estereograma ${vista}`}
-                className={
-                  zoomFull
-                    ? 'max-w-none h-auto select-none'
-                    : 'max-w-full max-h-full object-contain select-none'
-                }
-              />
-            ) : rows.length === 0 ? (
-              <div className="text-center p-8 max-w-md select-none">
-                <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
-                  <Upload className="w-5 h-5 text-slate-500" />
+                <div className="flex items-center gap-2">
+                  {posibles.length > 0 ? (
+                    <AlertTriangle className="w-4 h-4 text-[#D9622B] shrink-0" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  )}
+                  <div className="truncate">
+                    <span className="font-bold text-slate-900">
+                      {posibles.length > 0
+                        ? `${posibles.length} de ${veredictosActivos.length} mecanismos cinemáticamente posibles`
+                        : 'Ningún mecanismo excede el umbral crítico'}
+                    </span>
+                    <span className="text-slate-600 ml-2">
+                      {posibles.length > 0
+                        ? `Posibles: ${posibles.map((p) => p.nombre.toLowerCase()).join(' y ')} (porcentaje crítico mayor a ${umbral} %).`
+                        : `(umbral actual ${umbral} %)`}
+                    </span>
+                  </div>
                 </div>
-                <h3 className="font-semibold text-slate-800 text-sm mb-1">Área de trabajo limpia</h3>
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Suba un archivo CSV o Excel desde el paso <strong className="text-slate-700">1 · Datos de entrada</strong> o cargue los datos de ejemplo para ejecutar el análisis.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleLoadEjemplo}
-                  className="px-3.5 py-1.5 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-medium text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                >
-                  <Play className="w-3 h-3 fill-white" />
-                  <span>Cargar datos de ejemplo</span>
-                </button>
-              </div>
-            ) : (
-              <div className="text-xs text-slate-400 font-mono">
-                {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
               </div>
             )}
-          </div>
 
-          {/* Barra de estado inferior limpia */}
-          <footer className="h-6 shrink-0 bg-slate-50 border-t border-slate-200 px-3 flex items-center justify-between text-[11px] text-slate-500 font-mono select-none">
-            <div className="truncate">
-              {analisis
-                ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${talud.buz}°/${String(talud.dirbuz).padStart(3, '0')}° · φ = ${parametros.phi}°`
-                : 'Sin datos'}
+            {/* Pestañas de Vistas */}
+            <div className="h-8 shrink-0 bg-slate-50 border-b border-slate-200 px-3 flex items-center justify-center gap-1 select-none overflow-x-auto">
+              {VISTAS.map((v) => {
+                const active = vista === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVista(v.id)}
+                    className={`px-3 py-1 text-xs rounded border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                      active
+                        ? 'bg-white border-slate-300 text-slate-900 font-bold shadow-2xs'
+                        : 'bg-transparent border-transparent hover:bg-slate-200/60 text-slate-600 font-medium'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                );
+              })}
             </div>
-            <div className="shrink-0 ml-3">
-              {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'}
-            </div>
-          </footer>
-        </main>
 
-        {/* Panel Derecho: Inspector de Mecanismos y Tablas */}
-        <RightInspector
-          data={analisis}
-          vista={vista}
-          umbral={umbral}
-          onSelectVista={setVista}
-          onExportTableCsv={handleExportTableCsv}
-          onExportCunaExcel={handleExportCunaExcel}
-          collapsed={inspectorCollapsed}
-          onToggleCollapse={() => setInspectorCollapsed((c) => !c)}
-        />
-      </div>
+            {/* Título de la vista actual */}
+            <div className="text-center pt-2 pb-0.5 shrink-0">
+              <h2 className="text-sm font-bold text-slate-800 tracking-tight">
+                {vista === 'general' && `Estereograma general · Talud ${talud.buz}-${talud.dirbuz} · N = ${rows.length}`}
+                {vista === 'planar' && `Rotura planar · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
+                {vista === 'cuna' && `Rotura en cuña · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
+                {vista === 'flexural' && `Toppling flexural · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
+                {vista === 'directo' && `Toppling directo · Talud ${talud.buz}-${talud.dirbuz} · φ = ${parametros.phi}°`}
+                {vista === 'roseta' && `Diagrama de roseta · N = ${rows.length}`}
+              </h2>
+              <p className="text-[10px] text-slate-400 font-mono">
+                {filtro.tipos ? `Filtro: ${filtro.tipos.join(', ')}` : 'Sin filtro'} · N = {rows.length}
+              </p>
+            </div>
+
+            {/* Lienzo del Estereograma */}
+            <div className="flex-1 min-h-0 relative flex items-center justify-center p-2 overflow-hidden bg-white">
+              {(running || redrawing) && (
+                <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded bg-slate-900/85 text-white text-xs font-mono shadow flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                  <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
+                </div>
+              )}
+              {figuraSrc ? (
+                <img
+                  src={figuraSrc}
+                  alt={`Estereograma ${vista}`}
+                  className="max-w-full max-h-[56vh] object-contain select-none"
+                />
+              ) : rows.length === 0 ? (
+                <div className="text-center p-6 max-w-md select-none">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                    <Upload className="w-5 h-5 text-slate-500" />
+                  </div>
+                  <h3 className="font-semibold text-slate-800 text-sm mb-1">Área de trabajo limpia</h3>
+                  <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                    Suba un archivo CSV o Excel desde el paso <strong className="text-slate-700">1 · Datos de entrada</strong> o cargue los datos de ejemplo para ejecutar el análisis.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleLoadEjemplo}
+                    className="px-3.5 py-1.5 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-medium text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <Play className="w-3 h-3 fill-white" />
+                    <span>Cargar datos de ejemplo</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 font-mono">
+                  {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
+                </div>
+              )}
+            </div>
+
+            {/* Barra de estado inferior */}
+            <footer className="h-5 shrink-0 bg-slate-50 border-t border-slate-200 px-3 flex items-center justify-between text-[10.5px] text-slate-500 font-mono select-none">
+              <div className="truncate">
+                {analisis
+                  ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${talud.buz}°/${String(talud.dirbuz).padStart(3, '0')}° · φ = ${parametros.phi}°`
+                  : 'Sin datos'}
+              </div>
+              <div className="shrink-0 ml-3">
+                {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'}
+              </div>
+            </footer>
+          </main>
+
+          {/* Panel Derecho: Mecanismos de falla */}
+          <RightInspector
+            data={analisis}
+            vista={vista}
+            umbral={umbral}
+            onSelectVista={setVista}
+            onExportTableCsv={handleExportTableCsv}
+            onExportCunaExcel={handleExportCunaExcel}
+            collapsed={inspectorCollapsed}
+            onToggleCollapse={() => setInspectorCollapsed((c) => !c)}
+          />
+        </div>
+      )}
 
       {/* Modales */}
       {showEditor && (

@@ -1,6 +1,5 @@
 """Estructuras de datos que se pasan entre módulos: talud, parámetros y resultado del análisis."""
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
 
 import pandas as pd
 
@@ -23,11 +22,10 @@ class ParametrosDips:
     ang_min_interseccion: float = 0.0    # 0 = como Dips (solo se omiten planos idénticos)
     metodo_densidad: str = "Fisher"      # "Fisher" (Dips) o "Schmidt"
     area_conteo: float = 0.01            # círculo de conteo = 1 % del hemisferio
-    ponderacion: str = "ninguna"         # "ninguna" o "terzaghi"
-    linea_muestreo: Optional[Tuple[float, float]] = None   # (azimut, inclinación) para Terzaghi
-    ang_min_terzaghi: float = 15.0
     bordes_talud: str = "excluir"        # regla fija de la interfaz: un plano igual al talud y sus intersecciones
                                          # no son críticos (volumen cero). "dips" solo se usa en la validación interna.
+    ponderacion: str = "ninguna"
+    linea_muestreo: tuple | None = None
 
 
 @dataclass

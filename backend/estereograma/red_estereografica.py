@@ -68,9 +68,17 @@ def dibujar_red(ax, op, titulo=""):
     if op.titulo and titulo:
         ax.set_title(titulo, fontsize=fs + 3, weight="bold", loc="left")
     if op.mostrar_proyeccion:
-        nombre = "Equiángulo (Wulff)" if _es_wulff(op.proyeccion) else "Equiárea (Schmidt)"
-        ax.text(0, -1.27, f"{nombre} · hemisferio {op.hemisferio} · red {red}", ha="center",
-                fontsize=fs - 1.5, color="0.35")
+        ax.text(0, -1.27, texto_proyeccion(op), ha="center", fontsize=fs - 1.5, color="0.35")
+
+
+def texto_proyeccion(op):
+    """«Estereograma equiareal - Polar - Hemisferio inferior» (cada elemento con mayúscula inicial)."""
+    partes = ["Estereograma equiangular" if _es_wulff(op.proyeccion) else "Estereograma equiareal"]
+    red = str(op.red).lower()
+    if red in ("ecuatorial", "polar"):
+        partes.append(red.capitalize())
+    partes.append(f"Hemisferio {str(op.hemisferio).lower()}")
+    return " - ".join(partes)
 
 
 def nueva_figura(op, titulo="", filtro=""):

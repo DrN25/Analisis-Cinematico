@@ -7,7 +7,7 @@ Se trabaja del lado opuesto a la cara, en la dirección αs + 180°.  Ayuda de D
   En la exportación de Dips las tres zonas aparecen como C1.
 Planos base, con las etiquetas de la exportación de Dips:
   "Base":          buza hacia la cara dentro de ±LL con φ ≤ ψj ≤ ψs
-  "Sliding+Base":  buza hacia la cara (±90°) con ψj ≤ φ, fuera del grupo anterior
+  "Base con deslizamiento":  buza hacia la cara (±90°) con ψj ≤ φ, fuera del grupo anterior
 Comprobado contra una exportación de Dips v9 (1 144 planos, 653 721 intersecciones): planos base 207 de 207,
 aristas: las 74 893 de Dips están incluidas (bordes ±LL y 90° inclusivos).
 La prueba de esbeltez del bloque (Wyllie 2018, ec. 10.1–10.2) no es estereográfica y no se incluye.
@@ -58,7 +58,7 @@ def evaluar_toppling_directo(datos, intersecciones, talud, param):
         ri[k] = v
     ri["Directo"] = z["Zona_1"] | z["Zona_2"]
     ri["Oblicuo"] = z["Zona_3"]
-    ri["C1_Dips"] = ri["Directo"] | ri["Oblicuo"]
+    ri["Total_Z1_Z3"] = ri["Directo"] | ri["Oblicuo"]
     ri["Clasificacion"] = np.select([z["Zona_2"], z["Zona_1"], z["Zona_3"]],
                                     ["Directo (zona 2)", "Directo (zona 1)", "Oblicuo (zona 3)"], "No crítica")
     tp, pp = polo_de_plano(datos["Buz"].to_numpy(float), datos["DirBuz"].to_numpy(float))
@@ -66,7 +66,8 @@ def evaluar_toppling_directo(datos, intersecciones, talud, param):
     difp = np.abs(envolver(datos["DirBuz"].to_numpy(float) - talud.dirbuz))
     rb = base(datos)
     rb["Critico"] = g_base | g_sliding
-    rb["Etiqueta_Dips"] = np.where(g_base, "Base", np.where(g_sliding, "Sliding+Base", ""))
+    rb["Grupo_Base"] = np.where(g_base, "Base", np.where(g_sliding, "Base con deslizamiento", ""))
+    rb["Etiqueta_Dips"] = rb["Grupo_Base"]
     rb["Zona"] = np.where(g_base, "1", np.where(g_sliding, np.where(difp <= param.ll_directo, "2", "3"), ""))
     rb["Vuelca_y_Desliza"] = g_base
     return ri, rb

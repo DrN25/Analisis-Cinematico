@@ -13,7 +13,7 @@ from cinematica.criterio_cuna_dips import evaluar_cuna
 from cinematica.criterio_planar_dips import evaluar_planar, zona_planar
 from cinematica.criterio_toppling_directo_dips import evaluar_toppling_directo
 from cinematica.criterio_toppling_flexural_dips import evaluar_flexural
-from cinematica.densidad_polos_fisher import (AREA_CONTEO, densidad_en_puntos, pesos_terzaghi, semiangulo_conteo,
+from cinematica.densidad_polos_fisher import (AREA_CONTEO, densidad_en_puntos, semiangulo_conteo,
                                               tabla_influencia_fisher)
 from cinematica.geometria_esferica import (buz_aparente, envolver, orientacion_media, polo_de_plano, rumbo_a_dirbuz,
                                            vector_linea, vector_polo)
@@ -140,9 +140,6 @@ def ejecutar_validacion():
     verificar(F, "Fig. 5.9: polo junto al borde cuenta en el lado opuesto",
               densidad_en_puntos(vector_polo(np.array([89.0]), np.array([0.0])),
                                  vector_polo(np.array([89.0]), np.array([180.0])), metodo="Schmidt")[0] == 100.0)
-    w = pesos_terzaghi(pd.DataFrame({"Buz": [90.0, 0.0], "DirBuz": [270.0, 0.0]}), (90.0, 0.0), 15)
-    verificar(F, "Sec. 5.3.6: Terzaghi w = 1 (plano ⟂ línea) y w máx = 1/sin(ángulo mín)",
-              np.isclose(w[0], 1.0) and np.isclose(w[1], 1 / np.sin(np.radians(15))))
     t, p = polo_de_plano(55, 300)
     verificar(F, "Tabla 2.1: plano 55/300 ↔ polo 120/35", np.isclose(t, 120) and np.isclose(p, 35))
     verificar(F, "Tabla 2.1: rumbo 210 (mano derecha) y 030 (mano izquierda) → dirbuz 300",
@@ -181,8 +178,8 @@ def ejecutar_validacion():
               list(ri.Clasificacion) == ["Directo (zona 1)", "Directo (zona 2)", "No crítica", "Directo (zona 2)",
                                          "Oblicuo (zona 3)", "No crítica", "No crítica"])
     _, rb = _directo([(10, 180), (20, 230), (10, 0), (40, 180)], _inter([], []))
-    verificar(F, "Direct Toppling: planos base «Sliding+Base» (ψ ≤ φ) y «Base» (φ ≤ ψ ≤ ψs dentro de ±LL)",
-              list(rb.Etiqueta_Dips) == ["Sliding+Base", "Sliding+Base", "", "Base"]
+    verificar(F, "Direct Toppling: planos base «Base con deslizamiento» (ψ ≤ φ) y «Base» (φ ≤ ψ ≤ ψs dentro de ±LL)",
+              list(rb.Grupo_Base) == ["Base con deslizamiento", "Base con deslizamiento", "", "Base"]
               and list(rb.Critico) == [True, True, False, True])
     verificar(F, "Direct Toppling: polo en zona 1 = vuelca y desliza", rb.Vuelca_y_Desliza.iloc[3])
 
@@ -196,12 +193,12 @@ def ejecutar_validacion():
                   len(datos) == 1144 and Ni == 653721)
         for nombre, n, esperado in [("Rotura planar", res.planar.Critico.sum(), 137),
                                     ("Toppling flexural", res.flexural.Critico.sum(), 71),
-                                    ("Planos base «Base»", (res.directo_base.Etiqueta_Dips == "Base").sum(), 148),
-                                    ("Planos base «Sliding+Base»", (res.directo_base.Etiqueta_Dips == "Sliding+Base").sum(), 59)]:
+                                    ("Planos base «Base»", (res.directo_base.Grupo_Base == "Base").sum(), 148),
+                                    ("Planos base «Base con deslizamiento»", (res.directo_base.Grupo_Base == "Base con deslizamiento").sum(), 59)]:
             verificar(F, f"{nombre}: {int(n)} planos (Dips {esperado})", int(n) == esperado)
         for nombre, n, esperado in [("Cuña P2 (dos planos)", (res.cuna.Modo == "P2").sum(), 104640),
                                     ("Cuña P1 (un plano)", (res.cuna.Modo == "P1").sum(), 69118),
-                                    ("Toppling directo C1 (zonas 1+2+3)", res.directo_aristas.C1_Dips.sum(), 74893)]:
+                                    ("Toppling directo C1 (zonas 1+2+3)", res.directo_aristas.Total_Z1_Z3.sum(), 74893)]:
             verificar(F, f"{nombre}: {int(n):,} (Dips {esperado:,}; diferencia {abs(int(n) - esperado) / Ni * 100:.3f} % "
                          "del total, casos exactamente en el borde)", abs(int(n) - esperado) / Ni < 0.0005)
 
@@ -220,7 +217,7 @@ def ejecutar_validacion():
     verificar(F, "Toppling flexural y directo (aristas y planos base) no cambian: la exclusión es solo planar y cuña",
               list(r_e.flexural.Critico) == list(r_d.flexural.Critico)
               and list(r_e.directo_base.Critico) == list(r_d.directo_base.Critico)
-              and list(r_e.directo_aristas.C1_Dips) == list(r_d.directo_aristas.C1_Dips)
+              and list(r_e.directo_aristas.Total_Z1_Z3) == list(r_d.directo_aristas.Total_Z1_Z3)
               and "Paralelo_Talud" not in r_e.directo_base)
     verificar(F, "Las intersecciones sin el plano paralelo no cambian",
               list(r_e.cuna.Critico[~con_talud]) == list(r_d.cuna.Critico[~con_talud]))
@@ -235,9 +232,9 @@ def ejecutar_validacion():
         verificar(F, "Pared W al excluir: 1 plano (70/119) y sus 1 143 intersecciones",
                   int(res.planar.Paralelo_Talud.sum()) == 1 and int(res.cuna.Paralelo_Talud.sum()) == 1143)
         verificar(F, "Pared W: planar 136, cuña 173 014; toppling sin cambio («Base» 148, flexural 71, C1 74 904)",
-                  int(res.planar.Critico.sum()) == 136 and int((res.directo_base.Etiqueta_Dips == "Base").sum()) == 148
+                  int(res.planar.Critico.sum()) == 136 and int((res.directo_base.Grupo_Base == "Base").sum()) == 148
                   and int(res.cuna.Critico.sum()) == 173014 and int(res.flexural.Critico.sum()) == 71
-                  and int(res.directo_aristas.C1_Dips.sum()) == 74904)
+                  and int(res.directo_aristas.Total_Z1_Z3.sum()) == 74904)
 
     # ---------------------------------------------------------------- Hudson & Harrison (2000), coincidentes con Dips
     F = "Hudson & Harrison (2000)"

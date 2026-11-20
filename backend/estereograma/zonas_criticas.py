@@ -11,13 +11,16 @@ from estereograma.proyeccion_estereografica import malla_proyeccion
 from estereograma.red_estereografica import trazar_lineas
 
 
-def sombrear_zona(ax, op, funcion_zona, color, alpha=0.45):
+ALPHA_ZONA = 0.62   # zonas críticas bien visibles; los contornos de polos van debajo y en otra paleta
+
+
+def sombrear_zona(ax, op, funcion_zona, color, alpha=ALPHA_ZONA):
     """funcion_zona(trend, plunge) → bool, evaluada en cada punto de la malla."""
     gx, gy, dentro, gt, gp = malla_proyeccion(op.proyeccion, op.hemisferio, int(op.resolucion))
     m = np.where(dentro & funcion_zona(gt, gp), 1.0, 0.0)
     if m.any():
-        ax.contourf(gx, gy, m, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=1)
-        ax.contour(gx, gy, m, levels=[0.5], colors=[color], linewidths=1.0, zorder=1)
+        ax.contourf(gx, gy, m, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=1.2)
+        ax.contour(gx, gy, m, levels=[0.5], colors=["#7a1f1f"], linewidths=1.1, zorder=1.3)
 
 
 def estilos_curvas(op):

@@ -148,7 +148,7 @@ export const LeftSidebar: React.FC<Props> = ({
   }
 
   return (
-    <aside className="w-80 min-w-[320px] max-w-[320px] shrink-0 bg-slate-50 border-r border-slate-200 flex flex-col min-h-0 select-none overflow-hidden">
+    <aside className="w-[280px] min-w-[270px] max-w-[290px] shrink-0 bg-slate-50 border-r border-slate-200 flex flex-col min-h-0 select-none overflow-hidden">
       {/* Cabecera del panel */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
         <div className="flex items-center gap-2 text-slate-800 font-semibold text-xs tracking-tight">
@@ -223,7 +223,7 @@ export const LeftSidebar: React.FC<Props> = ({
                 onClick={() => fileRef.current?.click()}
                 className="flex items-center justify-center gap-1.5 py-1 px-2 border border-slate-300 hover:bg-white bg-slate-50 rounded text-slate-700 text-xs font-medium transition-colors shadow-xs cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5 text-[#881337]" />
+                <Upload className="w-3.5 h-3.5 text-[#1F4E9C]" />
                 <span>{uploading ? 'Leyendo…' : 'Subir archivo'}</span>
               </button>
               <button
@@ -235,16 +235,16 @@ export const LeftSidebar: React.FC<Props> = ({
               </button>
             </div>
 
-            {/* Botón de limpieza de datos */}
+            {/* Botón explícito de Limpiar carga */}
             <button
               type="button"
-              disabled={totalRows === 0 && !filename}
+              disabled={totalRows === 0 && (!filename || filename === 'Sin archivo')}
               onClick={onClearData}
-              className="w-full py-1 px-2 border border-rose-200 hover:bg-rose-50 text-rose-700 bg-white rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
-              title="Limpiar datos y resultados actuales"
+              className="w-full py-1 px-2 border border-amber-300 hover:border-rose-400 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-amber-50/40 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+              title="Limpiar la carga del archivo anterior y reiniciar el área de trabajo"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Limpiar datos</span>
+              <span>Limpiar carga</span>
             </button>
 
             {tiposDisponibles.length > 0 && (
