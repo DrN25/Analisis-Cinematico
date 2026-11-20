@@ -2,7 +2,8 @@ FROM python:3.11-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MPLBACKEND=Agg
+    MPLBACKEND=Agg \
+    MALLOC_ARENA_MAX=2
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

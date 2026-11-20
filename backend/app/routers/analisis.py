@@ -1,5 +1,6 @@
 """Rutas de cálculo cinemático, renderizado de estereogramas y descargas Excel/PNG/ZIP."""
 import base64
+import gc
 import io
 import math
 import os
@@ -15,6 +16,7 @@ from typing import Any
 import matplotlib
 os.environ.setdefault("MPLBACKEND", "Agg")
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
@@ -59,8 +61,8 @@ from app.deps import get_current_user  # noqa: E402
 router = APIRouter()
 
 MAX_UPLOAD_BYTES = 80 * 1024  # Límite estricto de 80 KB por archivo
-CACHE_MAX_ITEMS = 12
-CACHE_TTL_SECONDS = 1800
+CACHE_MAX_ITEMS = 3
+CACHE_TTL_SECONDS = 600
 
 PLOT_LOCK = threading.Lock()
 CACHE_LOCK = threading.Lock()
@@ -106,12 +108,18 @@ def _cache_put(user_id: int, res: Any, descartadas: pd.DataFrame) -> str:
     analysis_id = uuid.uuid4().hex
     now = time.monotonic()
     with CACHE_LOCK:
+        # Purgar análisis anteriores del mismo usuario para liberar DataFrames de memoria
+        prev_keys = [k for k in ANALYSIS_CACHE if k[0] == user_id]
+        for k in prev_keys:
+            ANALYSIS_CACHE.pop(k, None)
+        # Purgar análisis expirados
         stale = [k for k, (_, _, ts) in ANALYSIS_CACHE.items() if now - ts > CACHE_TTL_SECONDS]
         for k in stale:
             ANALYSIS_CACHE.pop(k, None)
         ANALYSIS_CACHE[(user_id, analysis_id)] = (res, descartadas, now)
         while len(ANALYSIS_CACHE) > CACHE_MAX_ITEMS:
             ANALYSIS_CACHE.popitem(last=False)
+    gc.collect()
     return analysis_id
 
 
@@ -141,7 +149,11 @@ def _render_png(res: Any, vista: str, op: OpcionesEstereograma, dpi: int | None 
     _, fn = FIGURAS[vista]
     target_dpi = dpi or op.dpi_pantalla
     with PLOT_LOCK:
-        return png_figura(fn(res, op), target_dpi)
+        fig = fn(res, op)
+        data = png_figura(fig, target_dpi)
+        plt.close("all")
+        gc.collect()
+        return data
 
 
 def _parse_payload(df_raw: pd.DataFrame, filename: str) -> dict[str, Any]:
@@ -251,7 +263,7 @@ def ejecutar(
         ["Plano_1", "Plano_2", "Trend", "Plunge"]
     ].sort_values("Plunge", ascending=False).round(1)
 
-    return {
+    result_payload = {
         "analysis_id": analysis_id,
         "contexto": {
             "nombre": res.talud.nombre,
@@ -285,6 +297,9 @@ def ejecutar(
         },
         "figura_base64": base64.b64encode(png_bytes).decode("ascii"),
     }
+    del png_bytes
+    gc.collect()
+    return result_payload
 
 
 @router.post("/figura")
@@ -309,6 +324,7 @@ def exportar_excel(
     """Genera y descarga el libro Excel completo del análisis cacheado."""
     res, descartadas = _cache_get(current_user.usuario_id, data.analysis_id)
     content = excel_resultados(res, data.umbral, descartadas)
+    gc.collect()
     fname = f"{nombre_base(res)}_analisis_cinematico.xlsx"
     record_log(
         db, request, current_user.sistema_id, current_user.usuario, "EXPORT_EXCEL",
@@ -356,6 +372,7 @@ def exportar_zip(
     op = _to_opciones(data.opciones)
     with PLOT_LOCK:
         content = zip_resultados(res, op, data.umbral, descartadas)
+    gc.collect()
     fname = f"{nombre_base(res)}_resultados.zip"
     record_log(
         db, request, current_user.sistema_id, current_user.usuario, "EXPORT_ZIP",
@@ -414,8 +431,11 @@ def exportar_cuna_excel(
         db, request, current_user.sistema_id, current_user.usuario, "EXPORT_EXCEL",
         detalle=fname, usuario_id=current_user.usuario_id,
     )
+    val = buf.getvalue()
+    buf.close()
+    gc.collect()
     return Response(
-        content=buf.getvalue(),
+        content=val,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )

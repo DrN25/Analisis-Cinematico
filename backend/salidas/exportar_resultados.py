@@ -1,4 +1,5 @@
 """Excel, PNG y ZIP de resultados, todo en memoria (bytes): nada se sube a ningún servidor."""
+import gc
 import io
 import re
 import zipfile
@@ -34,8 +35,15 @@ def png_figura(fig, dpi=150):
     try:
         fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight", facecolor="white")
     finally:
-        plt.close(fig)          # siempre se libera la figura, aunque falle el guardado
-    return buf.getvalue()
+        try:
+            fig.clf()
+        except Exception:
+            pass
+        plt.close(fig)
+        plt.close("all")
+    val = buf.getvalue()
+    buf.close()
+    return val
 
 
 MAX_FILAS_HOJA = 1_048_575           # filas de datos por hoja de Excel (más el encabezado)
@@ -138,9 +146,9 @@ def excel_resultados(res, umbral=None, descartadas=None):
     return buf.getvalue()
 
 
-def zip_resultados(res, op, umbral=None, descartadas=None, resolucion_exportar=301):
-    """ZIP con el Excel de resultados, CSVs de intersecciones críticas y un PNG por estereograma, a op.dpi_exportar."""
-    op_exp = replace(op, resolucion=resolucion_exportar)
+def zip_resultados(res, op, umbral=None, descartadas=None, resolucion_exportar=201):
+    """ZIP con el Excel de resultados, CSVs de intersecciones críticas y un PNG por estereograma."""
+    op_exp = replace(op, resolucion=min(resolucion_exportar, 201))
     base = nombre_base(res)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -148,6 +156,14 @@ def zip_resultados(res, op, umbral=None, descartadas=None, resolucion_exportar=3
         cuna, aristas = tablas_intersecciones(res)
         z.writestr(f"{base}_cuna_intersecciones_criticas.csv", cuna.to_csv(index=False).encode("utf-8-sig"))
         z.writestr(f"{base}_toppling_directo_aristas_criticas.csv", aristas.to_csv(index=False).encode("utf-8-sig"))
+        # Renderizar cada figura liberando memoria inmediatamente para evitar picos >512MB
         for clave, (_, funcion) in FIGURAS.items():
-            z.writestr(f"{base}_{clave}.png", png_figura(funcion(res, op_exp), op.dpi_exportar))
-    return buf.getvalue()
+            fig = funcion(res, op_exp)
+            png_bytes = png_figura(fig, min(op.dpi_exportar, 200))
+            z.writestr(f"{base}_{clave}.png", png_bytes)
+            plt.close("all")
+            gc.collect()
+    val = buf.getvalue()
+    buf.close()
+    gc.collect()
+    return val
