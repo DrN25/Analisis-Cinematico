@@ -186,6 +186,9 @@ export default function App() {
     [rows, filtro, vista, talud, parametros, umbral, opciones],
   );
 
+  const runAnalysisRef = useRef(runAnalysis);
+  runAnalysisRef.current = runAnalysis;
+
   const initWorkspace = useCallback(async () => {
     setErrorMsg(null);
     try {
@@ -230,7 +233,8 @@ export default function App() {
       })
       .catch(() => setToken(null))
       .finally(() => setAuthChecking(false));
-  }, [initWorkspace]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!analisis?.analysis_id) return;
@@ -258,17 +262,17 @@ export default function App() {
         reader.readAsDataURL(blob);
       } catch (err) {
         if (err instanceof ApiError && err.code === 'CACHE_MISS') {
-          await runAnalysis(undefined, undefined, vista);
+          await runAnalysisRef.current(undefined, undefined, vista);
         } else {
           setErrorMsg(err instanceof Error ? err.message : 'No se pudo redibujar el estereograma.');
         }
       } finally {
         setRedrawing(false);
       }
-    }, 140);
+    }, 200);
 
     return () => window.clearTimeout(timer);
-  }, [vista, opciones, analisis?.analysis_id, runAnalysis]);
+  }, [vista, opciones, analisis?.analysis_id]);
 
   const handleUploadFile = async (file: File) => {
     setUploading(true);
@@ -427,6 +431,14 @@ export default function App() {
       posible: v.criticos > 0 && v.porcentaje >= umbral,
     }));
   const posibles = veredictosActivos.filter((v) => v.posible);
+
+  const hasPendingChanges = Boolean(
+    analisis &&
+      (analisis.contexto.buz !== talud.buz ||
+        analisis.contexto.dirbuz !== talud.dirbuz ||
+        analisis.contexto.phi !== parametros.phi ||
+        analisis.contexto.nombre !== talud.nombre),
+  );
 
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-slate-100 text-slate-800 font-sans select-none">
@@ -1045,6 +1057,7 @@ export default function App() {
             onOpenEditor={() => setShowEditor(true)}
             running={running}
             uploading={uploading}
+            hasPendingChanges={hasPendingChanges}
           />
 
           {/* Viewport Central */}
@@ -1068,7 +1081,10 @@ export default function App() {
                 <div className="flex items-center justify-between text-[11px] text-slate-600 mb-0.5 font-mono">
                   <span className="font-semibold text-slate-700">Resumen del análisis cinemático</span>
                   <span>
-                    Talud {talud.buz}° / {talud.dirbuz}° · φ = {parametros.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · {filtro.tipos ? `Filtro: ${filtro.tipos.join(', ')}` : 'Sin filtro'}
+                    Talud {analisis.contexto.buz}° / {analisis.contexto.dirbuz}° · φ ={' '}
+                    {analisis.contexto.phi}° · {analisis.contexto.n_datos} discontinuidades ·{' '}
+                    {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones ·{' '}
+                    {analisis.contexto.filtro ? analisis.contexto.filtro.split(' · N =')[0] : 'Sin filtro'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

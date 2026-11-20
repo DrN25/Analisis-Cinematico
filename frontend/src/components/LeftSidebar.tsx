@@ -40,6 +40,7 @@ interface Props {
   onOpenEditor: () => void;
   running: boolean;
   uploading: boolean;
+  hasPendingChanges?: boolean;
 }
 
 const inputCls =
@@ -98,6 +99,7 @@ export const LeftSidebar: React.FC<Props> = ({
   onOpenEditor,
   running,
   uploading,
+  hasPendingChanges = false,
 }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -429,187 +431,205 @@ export const LeftSidebar: React.FC<Props> = ({
           </div>
         </TreeGroup>
 
-        {/* 3 · Geometría del talud */}
-        <TreeGroup title="3 · Geometría del talud" defaultOpen={true}>
-          <div>
-            <label className={labelCls}>Nombre del talud</label>
-            <input
-              type="text"
-              value={talud.nombre}
-              onChange={(e) => onChangeTalud({ ...talud, nombre: e.target.value })}
-              className={inputCls}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>Buzamiento ψs (°)</label>
+        {/* Formulario de Análisis: 3 · Geometría del talud y 4 · Parámetros del análisis */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onRunAnalysis();
+          }}
+          className="space-y-0"
+        >
+          {/* 3 · Geometría del talud */}
+          <TreeGroup title="3 · Geometría del talud" defaultOpen={true}>
+            <div>
+              <label className={labelCls}>Nombre del talud</label>
               <input
-                type="number"
-                min={1}
-                max={90}
-                step={1}
-                value={talud.buz}
-                onChange={(e) =>
-                  onChangeTalud({
-                    ...talud,
-                    buz: Math.min(90, Math.max(1, Number(e.target.value) || 1)),
-                  })
-                }
+                type="text"
+                value={talud.nombre}
+                onChange={(e) => onChangeTalud({ ...talud, nombre: e.target.value })}
                 className={inputCls}
               />
             </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Dir. buzamiento αs (°)</label>
-              <input
-                type="number"
-                min={0}
-                max={359.9}
-                step={1}
-                value={talud.dirbuz}
-                onChange={(e) =>
-                  onChangeTalud({
-                    ...talud,
-                    dirbuz: Math.min(359.9, Math.max(0, Number(e.target.value) || 0)),
-                  })
-                }
-                className={inputCls}
-              />
-            </div>
-          </div>
-        </TreeGroup>
-
-        {/* 4 · Parámetros del análisis */}
-        <TreeGroup title="4 · Parámetros del análisis" defaultOpen={true}>
-          <div className="grid grid-cols-2 gap-2 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>Ángulo de fricción φ (°)</label>
-              <input
-                type="number"
-                min={0}
-                max={89}
-                step={1}
-                value={parametros.phi}
-                onChange={(e) =>
-                  onChangeParametros({
-                    ...parametros,
-                    phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
-                  })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Ponderación</label>
-              <select
-                value={parametros.ponderacion}
-                onChange={(e) =>
-                  onChangeParametros({
-                    ...parametros,
-                    ponderacion: e.target.value as 'ninguna' | 'terzaghi',
-                  })
-                }
-                className={selectCls}
-              >
-                <option value="ninguna">Ninguna</option>
-                <option value="terzaghi">Terzaghi</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-1.5 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>LL planar ±°</label>
-              <input
-                type="number"
-                min={0}
-                max={90}
-                value={parametros.ll_planar}
-                onChange={(e) =>
-                  onChangeParametros({ ...parametros, ll_planar: Number(e.target.value) || 0 })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>LL flexural ±°</label>
-              <input
-                type="number"
-                min={0}
-                max={90}
-                value={parametros.ll_flexural}
-                onChange={(e) =>
-                  onChangeParametros({ ...parametros, ll_flexural: Number(e.target.value) || 0 })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>LL directo ±°</label>
-              <input
-                type="number"
-                min={0}
-                max={90}
-                value={parametros.ll_directo}
-                onChange={(e) =>
-                  onChangeParametros({ ...parametros, ll_directo: Number(e.target.value) || 0 })
-                }
-                className={inputCls}
-              />
-            </div>
-          </div>
-
-          <p className="text-[10.5px] text-slate-500 italic">
-            LL: límite lateral.
-          </p>
-
-          {parametros.ponderacion === 'terzaghi' && (
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 min-w-0">
+            <div className="grid grid-cols-2 gap-2 min-w-0">
               <div className="min-w-0">
-                <label className={labelCls}>Azimut línea (°)</label>
+                <label className={labelCls}>Buzamiento ψs (°)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={90}
+                  step={1}
+                  value={talud.buz}
+                  onChange={(e) =>
+                    onChangeTalud({
+                      ...talud,
+                      buz: Math.min(90, Math.max(1, Number(e.target.value) || 1)),
+                    })
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>Dir. buzamiento αs (°)</label>
                 <input
                   type="number"
                   min={0}
                   max={359.9}
-                  value={parametros.azimut_muestreo}
+                  step={1}
+                  value={talud.dirbuz}
                   onChange={(e) =>
-                    onChangeParametros({
-                      ...parametros,
-                      azimut_muestreo: Number(e.target.value) || 0,
-                    })
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className={labelCls}>Inclinación (°)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={90}
-                  value={parametros.inclinacion_muestreo}
-                  onChange={(e) =>
-                    onChangeParametros({
-                      ...parametros,
-                      inclinacion_muestreo: Number(e.target.value) || 0,
+                    onChangeTalud({
+                      ...talud,
+                      dirbuz: Math.min(359.9, Math.max(0, Number(e.target.value) || 0)),
                     })
                   }
                   className={inputCls}
                 />
               </div>
             </div>
-          )}
+          </TreeGroup>
 
-          {/* Botón Ejecutar Análisis en el paso 4 en gama de color vino/rojo */}
-          <button
-            type="button"
-            disabled={running || totalRows === 0}
-            onClick={onRunAnalysis}
-            className="w-full mt-1.5 py-1.5 px-3 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5 fill-white" />
-            <span>{running ? 'Calculando…' : 'Ejecutar análisis'}</span>
-          </button>
-        </TreeGroup>
+          {/* 4 · Parámetros del análisis */}
+          <TreeGroup title="4 · Parámetros del análisis" defaultOpen={true}>
+            <div className="grid grid-cols-2 gap-2 min-w-0">
+              <div className="min-w-0">
+                <label className={labelCls}>Ángulo de fricción φ (°)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={89}
+                  step={1}
+                  value={parametros.phi}
+                  onChange={(e) =>
+                    onChangeParametros({
+                      ...parametros,
+                      phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
+                    })
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>Ponderación</label>
+                <select
+                  value={parametros.ponderacion}
+                  onChange={(e) =>
+                    onChangeParametros({
+                      ...parametros,
+                      ponderacion: e.target.value as 'ninguna' | 'terzaghi',
+                    })
+                  }
+                  className={selectCls}
+                >
+                  <option value="ninguna">Ninguna</option>
+                  <option value="terzaghi">Terzaghi</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1.5 min-w-0">
+              <div className="min-w-0">
+                <label className={labelCls}>LL planar ±°</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={parametros.ll_planar}
+                  onChange={(e) =>
+                    onChangeParametros({ ...parametros, ll_planar: Number(e.target.value) || 0 })
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>LL flexural ±°</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={parametros.ll_flexural}
+                  onChange={(e) =>
+                    onChangeParametros({ ...parametros, ll_flexural: Number(e.target.value) || 0 })
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>LL directo ±°</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={parametros.ll_directo}
+                  onChange={(e) =>
+                    onChangeParametros({ ...parametros, ll_directo: Number(e.target.value) || 0 })
+                  }
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <p className="text-[10.5px] text-slate-500 italic">
+              LL: límite lateral.
+            </p>
+
+            {parametros.ponderacion === 'terzaghi' && (
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 min-w-0">
+                <div className="min-w-0">
+                  <label className={labelCls}>Azimut línea (°)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={359.9}
+                    value={parametros.azimut_muestreo}
+                    onChange={(e) =>
+                      onChangeParametros({
+                        ...parametros,
+                        azimut_muestreo: Number(e.target.value) || 0,
+                      })
+                    }
+                    className={inputCls}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className={labelCls}>Inclinación (°)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={90}
+                    value={parametros.inclinacion_muestreo}
+                    onChange={(e) =>
+                      onChangeParametros({
+                        ...parametros,
+                        inclinacion_muestreo: Number(e.target.value) || 0,
+                      })
+                    }
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Botón Ejecutar Análisis en el paso 4 en gama de color vino/rojo */}
+            <button
+              type="submit"
+              disabled={running || totalRows === 0}
+              className={`w-full mt-1.5 py-1.5 px-3 rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer ${
+                hasPendingChanges
+                  ? 'bg-[#881337] hover:bg-[#6F0F2C] text-white ring-2 ring-[#881337]/30'
+                  : 'bg-[#881337] hover:bg-[#6F0F2C] text-white'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+              <span>
+                {running
+                  ? 'Calculando…'
+                  : hasPendingChanges
+                  ? 'Ejecutar análisis · Cambios pendientes'
+                  : 'Ejecutar análisis'}
+              </span>
+            </button>
+          </TreeGroup>
+        </form>
 
         {/* 5 · Criterio del resumen */}
         <TreeGroup title="5 · Criterio del resumen" defaultOpen={true}>
