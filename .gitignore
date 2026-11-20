@@ -22,4 +22,5 @@ dist/
 .DS_Store
 Thumbs.db
 cloudflared.exe
+salidas_ref/
 

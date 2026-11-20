@@ -2,7 +2,11 @@ import React, { useRef, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  FileSpreadsheet,
+  Play,
   Sliders,
+  Table2,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import {
@@ -31,6 +35,10 @@ interface Props {
   onChangeOpciones: (o: OpcionesPlot) => void;
   onUploadFile: (file: File) => void;
   onLoadEjemplo: () => void;
+  onClearData: () => void;
+  onRunAnalysis: () => void;
+  onOpenEditor: () => void;
+  running: boolean;
   uploading: boolean;
 }
 
@@ -42,6 +50,7 @@ const labelCls = 'block text-[11px] font-medium text-slate-700 mb-0.5 select-non
 
 interface TreeGroupProps {
   title: string;
+  stepNumber?: number;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }
@@ -49,13 +58,13 @@ interface TreeGroupProps {
 const TreeGroup: React.FC<TreeGroupProps> = ({ title, defaultOpen = true, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-slate-200 rounded overflow-hidden bg-white mb-2 shadow-sm">
+    <div className="border border-slate-200 rounded overflow-hidden bg-white mb-2 shadow-xs">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200/70 border-b border-slate-200 text-xs font-semibold text-slate-800 select-none text-left transition-colors"
+        className="w-full flex items-center justify-between px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200/70 border-b border-slate-200 text-xs font-bold text-slate-800 select-none text-left transition-colors"
       >
-        <span className="truncate">{title}</span>
+        <span className="truncate tracking-tight">{title}</span>
         <span className="w-4 h-4 flex items-center justify-center border border-slate-300 bg-white text-xs text-slate-700 font-mono leading-none rounded shrink-0 ml-1">
           {open ? '−' : '+'}
         </span>
@@ -84,6 +93,10 @@ export const LeftSidebar: React.FC<Props> = ({
   onChangeOpciones,
   onUploadFile,
   onLoadEjemplo,
+  onClearData,
+  onRunAnalysis,
+  onOpenEditor,
+  running,
   uploading,
 }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -146,13 +159,13 @@ export const LeftSidebar: React.FC<Props> = ({
           type="button"
           onClick={onToggleCollapse}
           title="Plegar panel"
-          className="p-1 rounded hover:bg-slate-100 text-slate-500"
+          className="p-1 rounded hover:bg-slate-100 text-slate-500 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Árbol de opciones */}
+      {/* Árbol de opciones con los 5 pasos numerados */}
       <div className="flex-1 overflow-y-auto p-2.5 min-h-0">
         <input
           ref={fileRef}
@@ -166,266 +179,144 @@ export const LeftSidebar: React.FC<Props> = ({
           }}
         />
 
-        {/* 1. Datos y Filtros */}
-        <TreeGroup title="Datos y Filtros" defaultOpen={true}>
-          <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200 font-mono min-w-0">
-            <span className="truncate font-medium text-slate-800" title={filename}>
-              {filename}
-            </span>
-            <span className="shrink-0 text-slate-500 ml-1">
-              ({totalRows} {descartadasCount > 0 ? `· ${descartadasCount} desc.` : ''})
-            </span>
-          </div>
+        {/* 1 · Datos de entrada */}
+        <TreeGroup title="1 · Datos de entrada" defaultOpen={true}>
+          <div className="space-y-2">
+            <span className={labelCls}>Archivo CSV o Excel</span>
 
-          <div className="flex items-center justify-between gap-2 pt-0.5">
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileRef.current?.click()}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1 px-2 border border-slate-300 hover:bg-slate-50 bg-white rounded text-slate-700 text-xs font-medium transition-colors"
-            >
-              <Upload className="w-3.5 h-3.5 text-[#881337]" />
-              <span>{uploading ? 'Leyendo…' : 'Subir archivo'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={onLoadEjemplo}
-              className="text-xs text-[#881337] hover:underline font-medium shrink-0 px-1"
-            >
-              Usar ejemplo
-            </button>
-          </div>
-
-          {tiposDisponibles.length > 0 && (
-            <div className="pt-1">
-              <span className={labelCls}>Tipos de estructuras incluidas</span>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {tiposDisponibles.map((t) => {
-                  const active = tiposActivos.includes(t);
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => toggleTipo(t)}
-                      className={`px-2 py-0.5 text-[11px] border rounded transition-colors ${
-                        active
-                          ? 'bg-[#881337] border-[#881337] text-white font-medium'
-                          : 'bg-white border-slate-200 text-slate-400 line-through'
-                      }`}
-                    >
-                      {t} ({tiposConteo[t]})
-                    </button>
-                  );
-                })}
+            {totalRows > 0 ? (
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded p-2 text-xs">
+                <div className="flex items-center justify-between font-mono text-emerald-900 font-medium">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span className="truncate" title={filename}>{filename}</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-700 shrink-0 ml-1">
+                    {totalRows} filas
+                  </span>
+                </div>
+                {descartadasCount > 0 && (
+                  <p className="text-[10.5px] text-amber-700 font-mono mt-0.5">
+                    ({descartadasCount} filas descartadas)
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={onOpenEditor}
+                  className="w-full mt-1.5 py-1 px-2 bg-white border border-emerald-300 hover:bg-emerald-100/60 text-emerald-800 rounded font-medium text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                >
+                  <Table2 className="w-3 h-3 text-emerald-700" />
+                  <span>Ver / editar tabla · {totalRows} filas</span>
+                </button>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="bg-slate-100 border border-slate-200 rounded p-2 text-xs text-slate-500 font-mono text-center">
+                Sin archivo cargado
+              </div>
+            )}
 
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
-            <label className="text-xs text-slate-700 font-medium truncate">
-              Persistencia mínima (m)
-            </label>
-            <input
-              type="number"
-              min={0}
-              step={0.5}
-              value={filtro.persistencia_min}
-              onChange={(e) =>
-                onChangeFiltro({
-                  ...filtro,
-                  persistencia_min: Math.max(0, Number(e.target.value) || 0),
-                })
-              }
-              className="w-20 px-2 py-0.5 text-xs text-right border border-slate-300 rounded font-mono focus:outline-none focus:border-[#881337]"
-            />
-          </div>
-        </TreeGroup>
-
-        {/* 2. Geometría del Talud */}
-        <TreeGroup title="Geometría del Talud" defaultOpen={true}>
-          <div>
-            <label className={labelCls}>Nombre</label>
-            <input
-              type="text"
-              value={talud.nombre}
-              onChange={(e) => onChangeTalud({ ...talud, nombre: e.target.value })}
-              className={inputCls}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>Buzamiento ψs (°)</label>
-              <input
-                type="number"
-                min={1}
-                max={90}
-                step={1}
-                value={talud.buz}
-                onChange={(e) =>
-                  onChangeTalud({
-                    ...talud,
-                    buz: Math.min(90, Math.max(1, Number(e.target.value) || 1)),
-                  })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Dir. Buzamiento αs (°)</label>
-              <input
-                type="number"
-                min={0}
-                max={359.9}
-                step={1}
-                value={talud.dirbuz}
-                onChange={(e) =>
-                  onChangeTalud({
-                    ...talud,
-                    dirbuz: Math.min(359.9, Math.max(0, Number(e.target.value) || 0)),
-                  })
-                }
-                className={inputCls}
-              />
-            </div>
-          </div>
-        </TreeGroup>
-
-        {/* 3. Parámetros Cinemáticos (Dips) */}
-        <TreeGroup title="Parámetros Cinemáticos" defaultOpen={true}>
-          <div className="grid grid-cols-2 gap-2 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>Fricción φ (°)</label>
-              <input
-                type="number"
-                min={0}
-                max={89}
-                step={1}
-                value={parametros.phi}
-                onChange={(e) =>
-                  onChangeParametros({
-                    ...parametros,
-                    phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
-                  })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Ponderación</label>
-              <select
-                value={parametros.ponderacion}
-                onChange={(e) =>
-                  onChangeParametros({
-                    ...parametros,
-                    ponderacion: e.target.value as 'ninguna' | 'terzaghi',
-                  })
-                }
-                className={selectCls}
+            {/* Acciones de carga y limpieza */}
+            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+                className="flex items-center justify-center gap-1.5 py-1 px-2 border border-slate-300 hover:bg-white bg-slate-50 rounded text-slate-700 text-xs font-medium transition-colors shadow-xs cursor-pointer"
               >
-                <option value="ninguna">Ninguna</option>
-                <option value="terzaghi">Terzaghi</option>
-              </select>
+                <Upload className="w-3.5 h-3.5 text-[#881337]" />
+                <span>{uploading ? 'Leyendo…' : 'Subir archivo'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onLoadEjemplo}
+                className="flex items-center justify-center py-1 px-2 border border-slate-300 hover:bg-white bg-slate-50 text-slate-700 rounded text-xs font-medium transition-colors shadow-xs cursor-pointer"
+              >
+                <span>Usar ejemplo</span>
+              </button>
+            </div>
+
+            {/* Botón de limpieza de datos */}
+            <button
+              type="button"
+              disabled={totalRows === 0 && !filename}
+              onClick={onClearData}
+              className="w-full py-1 px-2 border border-rose-200 hover:bg-rose-50 text-rose-700 bg-white rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+              title="Limpiar datos y resultados actuales"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span>Limpiar datos</span>
+            </button>
+
+            {tiposDisponibles.length > 0 && (
+              <div className="pt-1 border-t border-slate-100">
+                <span className={labelCls}>Tipos a analizar</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {tiposDisponibles.map((t) => {
+                    const active = tiposActivos.includes(t);
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => toggleTipo(t)}
+                        className={`px-2 py-0.5 text-[11px] border rounded transition-colors cursor-pointer ${
+                          active
+                            ? 'bg-[#881337] border-[#881337] text-white font-medium'
+                            : 'bg-white border-slate-200 text-slate-400 line-through'
+                        }`}
+                      >
+                        {t} ({tiposConteo[t]})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+              <label className="text-xs text-slate-700 font-medium truncate">
+                Persistencia mínima (m)
+              </label>
+              <input
+                type="number"
+                min={0}
+                step={0.5}
+                value={filtro.persistencia_min}
+                onChange={(e) =>
+                  onChangeFiltro({
+                    ...filtro,
+                    persistencia_min: Math.max(0, Number(e.target.value) || 0),
+                  })
+                }
+                className="w-20 px-2 py-0.5 text-xs text-right border border-slate-300 rounded font-mono focus:outline-none focus:border-[#881337]"
+              />
             </div>
           </div>
+        </TreeGroup>
 
-          <div className="grid grid-cols-3 gap-1.5 min-w-0">
-            <div className="min-w-0">
-              <label className={labelCls}>LL Planar ±°</label>
-              <input
-                type="number"
-                min={0}
-                max={90}
-                value={parametros.ll_planar}
-                onChange={(e) =>
-                  onChangeParametros({ ...parametros, ll_planar: Number(e.target.value) || 0 })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>LL Flex. ±°</label>
-              <input
-                type="number"
-                min={0}
-                max={90}
-                value={parametros.ll_flexural}
-                onChange={(e) =>
-                  onChangeParametros({ ...parametros, ll_flexural: Number(e.target.value) || 0 })
-                }
-                className={inputCls}
-              />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>LL Dir. ±°</label>
-              <input
-                type="number"
-                min={0}
-                max={90}
-                value={parametros.ll_directo}
-                onChange={(e) =>
-                  onChangeParametros({ ...parametros, ll_directo: Number(e.target.value) || 0 })
-                }
-                className={inputCls}
-              />
-            </div>
-          </div>
+        {/* 2 · Opciones del estereograma */}
+        <TreeGroup title="2 · Opciones del estereograma" defaultOpen={true}>
+          <p className="text-[10.5px] text-slate-500 italic pb-0.5">
+            Solo cambian el dibujo; no recalculan el análisis.
+          </p>
 
-          {parametros.ponderacion === 'terzaghi' && (
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 min-w-0">
-              <div className="min-w-0">
-                <label className={labelCls}>Azimut línea (°)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={359.9}
-                  value={parametros.azimut_muestreo}
-                  onChange={(e) =>
-                    onChangeParametros({
-                      ...parametros,
-                      azimut_muestreo: Number(e.target.value) || 0,
-                    })
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className={labelCls}>Inclinación (°)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={90}
-                  value={parametros.inclinacion_muestreo}
-                  onChange={(e) =>
-                    onChangeParametros({
-                      ...parametros,
-                      inclinacion_muestreo: Number(e.target.value) || 0,
-                    })
-                  }
-                  className={inputCls}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="pt-1 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-1">
-              <label className={labelCls}>Umbral crítico SÍ/NO</label>
-              <span className="font-mono font-bold text-xs text-[#881337]">{umbral} %</span>
+          <div>
+            <div className="flex items-center justify-between mb-0.5">
+              <label className={labelCls}>Tamaño de los polos</label>
+              <span className="font-mono text-xs text-slate-600">
+                {opciones.tamano_simbolo ?? 30}
+              </span>
             </div>
             <input
               type="range"
-              min={0}
-              max={50}
-              step={1}
-              value={umbral}
-              onChange={(e) => onChangeUmbral(Number(e.target.value))}
+              min={10}
+              max={60}
+              step={2}
+              value={opciones.tamano_simbolo ?? 30}
+              onChange={(e) => setOpt('tamano_simbolo', Number(e.target.value))}
               className="w-full accent-[#881337] h-1.5"
             />
           </div>
-        </TreeGroup>
 
-        {/* 4. Opciones de Estereograma */}
-        <TreeGroup title="Opciones de Estereograma" defaultOpen={false}>
           <div className="grid grid-cols-2 gap-2 min-w-0">
             <div className="min-w-0">
               <label className={labelCls}>Proyección</label>
@@ -457,7 +348,7 @@ export const LeftSidebar: React.FC<Props> = ({
 
           <div className="grid grid-cols-2 gap-2 min-w-0">
             <div className="min-w-0">
-              <label className={labelCls}>Tipo de red</label>
+              <label className={labelCls}>Red</label>
               <select
                 value={opciones.red}
                 onChange={(e) =>
@@ -465,8 +356,8 @@ export const LeftSidebar: React.FC<Props> = ({
                 }
                 className={selectCls}
               >
-                <option value="polar">Polar</option>
                 <option value="ecuatorial">Ecuatorial</option>
+                <option value="polar">Polar</option>
                 <option value="ninguna">Ninguna</option>
               </select>
             </div>
@@ -516,7 +407,7 @@ export const LeftSidebar: React.FC<Props> = ({
           </div>
 
           <div className="space-y-1 pt-1 border-t border-slate-100">
-            <span className={labelCls}>Densidad y Contornos</span>
+            <span className={labelCls}>Contornos y Símbolos</span>
             <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
@@ -524,7 +415,7 @@ export const LeftSidebar: React.FC<Props> = ({
                 onChange={(e) => setOpt('contornos_general', e.target.checked)}
                 className="accent-[#881337]"
               />
-              <span>Contornos en Estereograma General</span>
+              <span>Contornos de densidad (General)</span>
             </label>
             <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
               <input
@@ -534,6 +425,26 @@ export const LeftSidebar: React.FC<Props> = ({
                 className="accent-[#881337]"
               />
               <span>Contornos en mecanismos</span>
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={opciones.tamano_por_persistencia}
+                onChange={(e) => setOpt('tamano_por_persistencia', e.target.checked)}
+                className="accent-[#881337]"
+              />
+              <span>Tamaño por persistencia</span>
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={opciones.etiquetas_polos === 'criticos'}
+                onChange={(e) =>
+                  setOpt('etiquetas_polos', e.target.checked ? 'criticos' : 'ninguno')
+                }
+                className="accent-[#881337]"
+              />
+              <span>Etiquetas de polos críticos (ID)</span>
             </label>
           </div>
 
@@ -574,6 +485,214 @@ export const LeftSidebar: React.FC<Props> = ({
               />
               <span className="truncate">Círculo borde</span>
             </label>
+          </div>
+        </TreeGroup>
+
+        {/* 3 · Geometría del talud */}
+        <TreeGroup title="3 · Geometría del talud" defaultOpen={true}>
+          <div>
+            <label className={labelCls}>Nombre del talud</label>
+            <input
+              type="text"
+              value={talud.nombre}
+              onChange={(e) => onChangeTalud({ ...talud, nombre: e.target.value })}
+              className={inputCls}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2 min-w-0">
+            <div className="min-w-0">
+              <label className={labelCls}>Buzamiento ψs (°)</label>
+              <input
+                type="number"
+                min={1}
+                max={90}
+                step={1}
+                value={talud.buz}
+                onChange={(e) =>
+                  onChangeTalud({
+                    ...talud,
+                    buz: Math.min(90, Math.max(1, Number(e.target.value) || 1)),
+                  })
+                }
+                className={inputCls}
+              />
+            </div>
+            <div className="min-w-0">
+              <label className={labelCls}>Dir. buzamiento αs (°)</label>
+              <input
+                type="number"
+                min={0}
+                max={359.9}
+                step={1}
+                value={talud.dirbuz}
+                onChange={(e) =>
+                  onChangeTalud({
+                    ...talud,
+                    dirbuz: Math.min(359.9, Math.max(0, Number(e.target.value) || 0)),
+                  })
+                }
+                className={inputCls}
+              />
+            </div>
+          </div>
+        </TreeGroup>
+
+        {/* 4 · Parámetros del análisis */}
+        <TreeGroup title="4 · Parámetros del análisis" defaultOpen={true}>
+          <div className="grid grid-cols-2 gap-2 min-w-0">
+            <div className="min-w-0">
+              <label className={labelCls}>Ángulo de fricción φ (°)</label>
+              <input
+                type="number"
+                min={0}
+                max={89}
+                step={1}
+                value={parametros.phi}
+                onChange={(e) =>
+                  onChangeParametros({
+                    ...parametros,
+                    phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
+                  })
+                }
+                className={inputCls}
+              />
+            </div>
+            <div className="min-w-0">
+              <label className={labelCls}>Ponderación</label>
+              <select
+                value={parametros.ponderacion}
+                onChange={(e) =>
+                  onChangeParametros({
+                    ...parametros,
+                    ponderacion: e.target.value as 'ninguna' | 'terzaghi',
+                  })
+                }
+                className={selectCls}
+              >
+                <option value="ninguna">Ninguna</option>
+                <option value="terzaghi">Terzaghi</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1.5 min-w-0">
+            <div className="min-w-0">
+              <label className={labelCls}>LL planar ±°</label>
+              <input
+                type="number"
+                min={0}
+                max={90}
+                value={parametros.ll_planar}
+                onChange={(e) =>
+                  onChangeParametros({ ...parametros, ll_planar: Number(e.target.value) || 0 })
+                }
+                className={inputCls}
+              />
+            </div>
+            <div className="min-w-0">
+              <label className={labelCls}>LL flexural ±°</label>
+              <input
+                type="number"
+                min={0}
+                max={90}
+                value={parametros.ll_flexural}
+                onChange={(e) =>
+                  onChangeParametros({ ...parametros, ll_flexural: Number(e.target.value) || 0 })
+                }
+                className={inputCls}
+              />
+            </div>
+            <div className="min-w-0">
+              <label className={labelCls}>LL directo ±°</label>
+              <input
+                type="number"
+                min={0}
+                max={90}
+                value={parametros.ll_directo}
+                onChange={(e) =>
+                  onChangeParametros({ ...parametros, ll_directo: Number(e.target.value) || 0 })
+                }
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          <p className="text-[10.5px] text-slate-500 italic">
+            LL: límite lateral.
+          </p>
+
+          {parametros.ponderacion === 'terzaghi' && (
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 min-w-0">
+              <div className="min-w-0">
+                <label className={labelCls}>Azimut línea (°)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={359.9}
+                  value={parametros.azimut_muestreo}
+                  onChange={(e) =>
+                    onChangeParametros({
+                      ...parametros,
+                      azimut_muestreo: Number(e.target.value) || 0,
+                    })
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>Inclinación (°)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={90}
+                  value={parametros.inclinacion_muestreo}
+                  onChange={(e) =>
+                    onChangeParametros({
+                      ...parametros,
+                      inclinacion_muestreo: Number(e.target.value) || 0,
+                    })
+                  }
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Botón Ejecutar Análisis en el paso 4 */}
+          <button
+            type="button"
+            disabled={running || totalRows === 0}
+            onClick={onRunAnalysis}
+            className="w-full mt-1.5 py-1.5 px-3 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <Play className="w-3.5 h-3.5 fill-white" />
+            <span>{running ? 'Calculando…' : 'Ejecutar análisis'}</span>
+          </button>
+        </TreeGroup>
+
+        {/* 5 · Criterio del resumen */}
+        <TreeGroup title="5 · Criterio del resumen" defaultOpen={true}>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-tight">
+                Porcentaje crítico de discontinuidades (%)
+              </label>
+              <span className="font-mono font-bold text-xs text-[#881337]">
+                {umbral} %
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={50}
+              step={1}
+              value={umbral}
+              onChange={(e) => onChangeUmbral(Number(e.target.value))}
+              className="w-full accent-[#881337] h-1.5 cursor-pointer"
+            />
+            <p className="text-[10.5px] text-slate-500 italic">
+              Umbral mínimo para considerar un mecanismo como cinemáticamente posible en el informe y resumen.
+            </p>
           </div>
         </TreeGroup>
       </div>

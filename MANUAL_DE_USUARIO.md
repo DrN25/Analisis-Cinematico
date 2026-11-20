@@ -9,11 +9,12 @@
 2. [Estructura de la Pantalla](#2-estructura-de-la-pantalla)
 3. [Carga de Datos Geológicos](#3-carga-de-datos-geológicos)
 4. [Editor de Discontinuidades](#4-editor-de-discontinuidades)
-5. [Panel Izquierdo: Configuración](#5-panel-izquierdo-configuración)
-   - [5.1 Datos y Filtros](#51-datos-y-filtros)
-   - [5.2 Geometría del Talud](#52-geometría-del-talud)
-   - [5.3 Parámetros Cinemáticos](#53-parámetros-cinemáticos)
-   - [5.4 Opciones de Estereograma](#54-opciones-de-estereograma)
+5. [Panel Izquierdo: Configuración (Flujo de 5 Pasos)](#5-panel-izquierdo-configuración-flujo-de-5-pasos)
+   - [5.1 1 · Datos de entrada](#51-1--datos-de-entrada)
+   - [5.2 2 · Opciones del estereograma](#52-2--opciones-del-estereograma)
+   - [5.3 3 · Geometría del talud](#53-3--geometría-del-talud)
+   - [5.4 4 · Parámetros del análisis](#54-4--parámetros-del-análisis)
+   - [5.5 5 · Criterio del resumen](#55-5--criterio-del-resumen)
 6. [Ejecutar el Cálculo](#6-ejecutar-el-cálculo)
 7. [Las 6 Vistas Gráficas](#7-las-6-vistas-gráficas)
    - [Vista 1: Estereograma General](#vista-1-estereograma-general)
@@ -66,10 +67,10 @@ La pantalla principal tiene cuatro zonas fijas.
 
 **Zona 1 — Barra superior:**
 - Barra de menú: `Archivo`, `Editar`, `Análisis`, `Ver`, `Herramientas` (solo admin) y `Ayuda`.
-- Barra de herramientas: logotipo, título `ANÁLISIS CINEMÁTICO`, botones `Subir archivo`, `Tabla de datos (N)`, `▶ Calcular`, herramientas de zoom, botones de exportación (`Excel`, `PNG`, `ZIP`, `Cuña`), controles de panel, botón `Admin` (solo admin) y botón `Cerrar sesión`.
+- Barra de herramientas: logotipo, título `ANÁLISIS CINEMÁTICO`, botones `Subir archivo`, `Tabla de datos (N)`, `▶ Calcular`, botón `Limpiar` (restablece los datos y resultados al estado inicial vacío), herramientas de zoom, botones de exportación (`Excel`, `PNG`, `ZIP`, `Cuña`), controles de panel, botón `Admin` (solo admin) y botón `Cerrar sesión`.
 
 **Zona 2 — Panel izquierdo (`Opciones de Análisis`):**
-Cuatro grupos desplegables: `Datos y Filtros`, `Geometría del Talud`, `Parámetros Cinemáticos` y `Opciones de Estereograma`. Cada grupo se abre o cierra tocando su encabezado.
+Cinco grupos desplegables organizados en un flujo de trabajo guiado de cinco pasos: `1 · Datos de entrada`, `2 · Opciones del estereograma`, `3 · Geometría del talud`, `4 · Parámetros del análisis` y `5 · Criterio del resumen`. Cada grupo se abre o cierra tocando su encabezado.
 
 **Zona 3 — Área central:**
 Muestra la proyección estereográfica. En la parte superior se ubican la barra con el recuento de mecanismos detectados y las 6 pestañas para alternar de gráfico. Debajo se despliega el lienzo estereográfico y al pie la barra de estado.
@@ -84,10 +85,10 @@ Muestra las 4 tarjetas de veredicto cinemático (`Rotura planar`, `Rotura en cu�
 El sistema trabaja con datos de discontinuidades del macizo rocoso: diaclasas, fallas, foliaciones, estratificación, etc.
 
 > **Instrucción para Captura [FIG-03]:**
-> Captura del grupo `Datos y Filtros` del panel izquierdo, expandido.
-> - Recuadro rojo **(1)** sobre el botón `Subir archivo`.
-> - Recuadro rojo **(2)** sobre el enlace `Usar ejemplo`.
-> - Recuadro rojo **(3)** sobre los botones de tipos de estructura (ej. `Diaclasa (36)`).
+> Captura del grupo `1 · Datos de entrada` del panel izquierdo, expandido.
+> - Recuadro rojo **(1)** sobre la tarjeta de archivo cargado / botón `Subir archivo`.
+> - Recuadro rojo **(2)** sobre los botones `Usar ejemplo` y `Limpiar datos`.
+> - Recuadro rojo **(3)** sobre los botones de tipos a analizar (ej. `JN (3)`).
 > - Recuadro rojo **(4)** sobre el campo `Persistencia mínima (m)`.
 
 ### Formatos de archivo admitidos
@@ -104,10 +105,12 @@ El sistema trabaja con datos de discontinuidades del macizo rocoso: diaclasas, f
 
 ### Opciones de carga
 
-1. **`Subir archivo`:** Abre el explorador de archivos del equipo. Al terminar de leer el archivo, aparece una notificación verde con el número de filas procesadas.
-2. **`Usar ejemplo`:** Carga un conjunto de prueba de 36 discontinuidades sin necesidad de un archivo propio.
-3. **Botones de tipo de estructura:** Después de cargar datos, el sistema muestra un botón por cada tipo detectado con el recuento entre paréntesis (ej. `Diaclasa (36)`). Si hace clic en uno, se tacha y ese tipo queda excluido del análisis. Vuelva a hacer clic para incluirlo.
-4. **`Persistencia mínima (m)`:** Escriba un valor mínimo en metros para excluir discontinuidades muy cortas del análisis.
+1. **`Subir archivo`:** Abre el explorador de archivos del equipo. Al terminar de leer el archivo, aparece una tarjeta verde indicando el nombre del archivo, número de filas procesadas y columnas reconocidas.
+2. **`Usar ejemplo`:** Carga un conjunto de prueba de discontinuidades sin necesidad de un archivo propio.
+3. **`Limpiar datos`:** Botón con ícono de papelera que vacía la tabla y reinicia el área de trabajo y estereograma al estado inicial limpio.
+4. **`Ver / editar tabla`:** Abre directamente el Editor de discontinuidades para revisar o modificar los registros.
+5. **Botones de tipos a analizar:** Muestra las etiquetas de cada tipo detectado con su recuento (ej. `JN (3)`). Al hacer clic en una etiqueta se tacha y se excluye del análisis.
+6. **`Persistencia mínima (m)`:** Permite ingresar un valor mínimo en metros (con botones `-` y `+` o escritura directa) para excluir discontinuidades de menor persistencia.
 
 ---
 
@@ -146,106 +149,101 @@ Si el archivo subido tenía filas con texto donde debía haber números, o valor
 
 ---
 
-## 5. PANEL IZQUIERDO: CONFIGURACIÓN
+## 5. PANEL IZQUIERDO: CONFIGURACIÓN (FLUJO DE 5 PASOS)
 
-El panel izquierdo tiene cuatro grupos desplegables. Haga clic en el encabezado de cada grupo para expandirlo o colapsarlo.
-
----
-
-### 5.1 DATOS Y FILTROS
-
-Muestra el archivo activo y los filtros de tipo y persistencia. Ver sección 3 para el detalle de cada control.
+El panel izquierdo organiza los parámetros en un flujo de trabajo guiado de cinco pasos numerados correlativamente. Cada paso se puede expandir o colapsar haciendo clic en su cabecera.
 
 ---
 
-### 5.2 GEOMETRÍA DEL TALUD
+### 5.1 1 · DATOS DE ENTRADA
 
-> **Instrucción para Captura [FIG-05]:**
-> Captura del panel izquierdo con `Geometría del Talud` y `Parámetros Cinemáticos` expandidos.
-> - Recuadro rojo **(1)** sobre los campos `Buzamiento ψs (°)` y `Dir. Buzamiento αs (°)`.
-> - Recuadro rojo **(2)** sobre el campo `Fricción φ (°)`.
-> - Recuadro rojo **(3)** sobre los tres campos de límites laterales (`LL Planar ±°`, `LL Flex. ±°`, `LL Dir. ±°`).
-> - Recuadro rojo **(4)** sobre el control deslizante `Umbral crítico SÍ/NO` y el porcentaje en rojo oscuro.
+Muestra el estado del archivo cargado, accesos directos de carga, limpieza y edición, y los filtros de tipo de estructura y persistencia mínima:
 
-Contiene tres campos:
-
-- **`Nombre`:** Etiqueta descriptiva del talud que aparece en los reportes (ej. `Talud 1`).
-- **`Buzamiento ψs (°)`:** Inclinación de la cara del talud respecto a la horizontal. Valor entre 1° y 90° (ej. 70° para un talud muy empinado).
-- **`Dir. Buzamiento αs (°)`:** Dirección hacia donde mira la cara del talud. Valor entre 0° y 359.9° (ej. 180° = hacia el Sur).
+- **Tarjeta de archivo cargado:** Muestra el nombre del archivo activo, peso y un botón para desvincularlo. Si la carga fue correcta, una tarjeta verde detalla el nombre, la cantidad de filas y las columnas reconocidas.
+- **`Subir archivo`:** Abre el explorador del sistema para cargar un archivo CSV o Excel.
+- **`Usar ejemplo`:** Carga instantáneamente un conjunto de datos geológicos de prueba.
+- **`Limpiar datos`:** Botón con ícono de papelera que vacía la tabla y reinicia el estereograma a un área de trabajo limpia.
+- **`Ver / editar tabla`:** Acceso directo para abrir el Editor de discontinuidades.
+- **Tipos a analizar:** Etiquetas interactivas con el recuento de cada tipo geológico (ej. `JN (3)`). Al hacer clic sobre una de ellas se excluye o reincorpora del análisis.
+- **`Persistencia mínima (m)`:** Filtro numérico (con botones `-` y `+` o entrada manual) para omitir discontinuidades cuya traza sea inferior a la longitud indicada.
 
 ---
 
-### 5.3 PARÁMETROS CINEMÁTICOS
+### 5.2 2 · OPCIONES DEL ESTEREOGRAMA
 
-- **`Fricción φ (°)`:** Ángulo de fricción interna de la roca (0° a 89°). Los planos con buzamiento mayor a este ángulo tienen potencial de deslizamiento.
-
-- **`Ponderación`:** Ajuste estadístico de sesgo por línea de muestreo.
-  - `Ninguna`: Sin corrección.
-  - `Terzaghi`: Corrección por orientación de la línea de muestreo. Al elegir esta opción aparecen dos campos adicionales: `Azimut línea (°)` e `Inclinación (°)`, donde debe ingresar la orientación de la línea de scanline usada en campo.
-
-- **`LL Planar ±°`:** Límite lateral para rotura planar. Define cuántos grados a cada lado de la dirección del talud se acepta que un plano pueda deslizar. Valor habitual: 20°.
-- **`LL Flex. ±°`:** Límite lateral para toppling flexural. Valor habitual: 30°.
-- **`LL Dir. ±°`:** Límite lateral para toppling directo. Valor habitual: 20°.
-
-- **`Umbral crítico SÍ/NO` (control deslizante 0% – 50%):** Porcentaje mínimo de polos o intersecciones que deben caer en la zona de peligro para que el sistema emita veredicto **SÍ** (mecanismo posible). Por defecto es **10%**, conforme al criterio estándar de Dips (Rocscience). Si el porcentaje crítico de un mecanismo supera este umbral, la tarjeta del panel derecho muestra **SÍ**; si está por debajo, muestra **NO**.
-
----
-
-### 5.4 OPCIONES DE ESTEREOGRAMA
-
-Este grupo está colapsado por defecto. Contiene los ajustes visuales del estereograma.
+Ajustes visuales de representación en la proyección estereográfica. Solo cambian el dibujo; no recalculan los modelos cinemáticos:
 
 > **Instrucción para Captura [FIG-05b]:**
-> Expandir el grupo `Opciones de Estereograma` del panel izquierdo.
-> - Recuadro rojo **(1)** sobre los selectores `Proyección` y `Hemisferio`.
-> - Recuadro rojo **(2)** sobre los selectores `Tipo de red` y `Espaciado marcas`.
-> - Recuadro rojo **(3)** sobre la sección `Elementos proyectados` con la casilla `Automático según mecanismo`.
-> - Recuadro rojo **(4)** sobre la sección `Densidad y Contornos` y la cuadrícula de decoraciones inferiores.
+> Expandir el grupo `2 · Opciones del estereograma` del panel izquierdo.
+> - Recuadro rojo **(1)** sobre el control deslizante `Tamaño de los polos`.
+> - Recuadro rojo **(2)** sobre los selectores `Proyección`, `Hemisferio` y `Red`.
+> - Recuadro rojo **(3)** sobre el selector `Color de los contornos` y las casillas `Contornos de densidad`, `Tamaño por persistencia` y `Etiquetas de los polos (ID)`.
+> - Recuadro rojo **(4)** sobre las opciones avanzadas de `Elementos proyectados` y decoraciones perimetrales.
 
-#### Proyección y Hemisferio
+- **`Tamaño de los polos`:** Control deslizante (1 a 20 px) para regular el diámetro de los puntos proyectados.
+- **`Proyección`:**
+  - `Equiárea (Schmidt)`: Estándar para análisis estadístico de orientaciones y densidad de polos; conserva la relación de áreas.
+  - `Equiángulo (Wulff)`: Conserva los ángulos verdaderos; los planos geológicos se representan como arcos circulares continuos.
+- **`Hemisferio`:**
+  - `Inferior`: Estándar universal en geología estructural y geotecnia; proyecta discontinuidades orientadas hacia abajo.
+  - `Superior`: Proyección hemisférica superior.
+- **`Red`:** Tipo de cuadrícula de referencia (`Ecuatorial`, `Polar` o `Ninguna`).
+- **`Espaciado marcas`:** Frecuencia angular de la cuadrícula (`5°`, `10°`, `15°`).
+- **`Color de los contornos`:** Paleta cromática para el mapa de calor de densidad (`Azules`, `Dips / Jet`, `Esmeralda`, `Magma`, `Viridis`).
+- **`Contornos de densidad`:** Activa o desactiva las curvas de concentración de polos de Fisher.
+- **`Tamaño por persistencia`:** Escala dinámicamente el diámetro de cada polo según la longitud de su traza en metros.
+- **`Etiquetas de los polos (ID)`:** Muestra el código identificador de la discontinuidad junto a su polo proyectado.
+- **`Elementos proyectados`:** Casilla de modo automático según mecanismo, o selección manual de casillas individuales (`polos`, `planos`, `intersecciones`).
+- **`Decoraciones del círculo`:**
+  - `Marcas exteriores`: Marcas de graduación en el perímetro exterior (N, S, E, W y divisiones angulares).
+  - `Cruz central`: Marca en el centro geométrico de la proyección.
+  - `Ejes N-S / E-W`: Líneas ortogonales que atraviesan los cuadrantes.
+  - `Círculo borde`: Círculo de referencia que encierra la proyección estereográfica.
 
-- **`Proyección`:** Tipo matemático de la red estereográfica.
-  - `Schmidt (Equiárea)`: La más usada en geología estructural. Conserva las áreas, lo que hace que los contornos de densidad sean estadísticamente correctos.
-  - `Wulff (Equiángulo)`: Conserva los ángulos. Los planos proyectados son arcos de círculo perfectos.
-- **`Hemisferio`:** Qué mitad de la esfera se proyecta.
-  - `Inferior`: Estándar para geología estructural. Los planos que buzan hacia abajo aparecen en el interior del círculo.
-  - `Superior`: Proyección inversa. Se usa en algunos contextos de tectónica.
+---
 
-#### Tipo de red y Espaciado
+### 5.3 3 · GEOMETRÍA DEL TALUD
 
-- **`Tipo de red`:** Cuadrícula de referencia dibujada sobre el estereograma.
-  - `Polar`: Red con círculos concéntricos e intervalos radiales.
-  - `Ecuatorial`: Red con arcos que representan planos de distinta inclinación.
-  - `Ninguna`: Sin red de fondo.
-- **`Espaciado marcas`:** Intervalo angular de la red. Opciones: `5°`, `10°`, `15°`.
+Parámetros geométricos de la cara de banco o ladera analizada:
 
-#### Elementos proyectados
+- **`Nombre`:** Denominación o código del talud para reportes (ej. `Talud 1`).
+- **`Buzamiento ψs (°)`:** Inclinación de la cara del talud respecto al plano horizontal (1° a 90°). Incluye controles de incremento y decremento rápido (`-` y `+`).
+- **`Dir. de buzamiento αs (°)`:** Azimut hacia donde mira o buza la cara del talud (0° a 360°).
 
-- **`Automático según mecanismo`** (casilla de verificación): Cuando está marcada, el sistema decide qué elementos mostrar según la vista activa: polos en General y vistas de planar/flexural, intersecciones en Cuña, etc. Esta opción está activa por defecto.
-- Si desactiva la casilla automática, aparecen tres casillas individuales para elegir manualmente qué proyectar:
-  - **`polos`:** Puntos que representan cada discontinuidad.
-  - **`planos`:** Arcos que representan los planos geológicos.
-  - **`intersecciones`:** Puntos de cruce entre pares de planos (relevantes para cuñas).
+---
 
-#### Densidad y Contornos
+### 5.4 4 · PARÁMETROS DEL ANÁLISIS
 
-- **`Contornos en Estereograma General`:** Muestra o esconde las curvas de densidad de Fisher (el mapa de calor de colores azul–verde–amarillo–rojo) en la Vista 1.
-- **`Contornos en mecanismos`:** Muestra o esconde las curvas de densidad en las vistas de mecanismos (Vistas 2 a 5).
+Variables geomecánicas y envolventes cinemáticas de rotura:
 
-#### Decoraciones del círculo
+> **Instrucción para Captura [FIG-05]:**
+> Captura del panel izquierdo con los pasos `3 · Geometría del talud` y `4 · Parámetros del análisis` desplegados.
+> - Recuadro rojo **(1)** sobre los campos `Buzamiento ψs (°)` y `Dir. de buzamiento αs (°)`.
+> - Recuadro rojo **(2)** sobre el campo `Ángulo de fricción φ (°)`.
+> - Recuadro rojo **(3)** sobre los tres campos de límites laterales (`LL planar ±°`, `LL flexural ±°`, `LL directo ±°`).
+> - Recuadro rojo **(4)** sobre el botón azul `Ejecutar análisis`.
 
-Cuatro casillas que controlan elementos gráficos del borde del estereograma:
+- **`Ángulo de fricción φ (°)`:** Ángulo de fricción básica de las discontinuidades (0° a 89°). Los planos con buzamiento superior a este valor se ubican dentro de la envolvente de deslizamiento.
+- **Límites laterales (LL):** Rango de desviación angular admisible respecto a la orientación de la cara del talud:
+  - **`LL planar ±°`:** Límite lateral para rotura planar (valor típico: 20°).
+  - **`LL flexural ±°`:** Límite lateral para toppling flexural (valor típico: 20° a 30°).
+  - **`LL directo ±°`:** Límite lateral para toppling directo (valor típico: 20°).
+- **`Ponderación`:** Corrección estadística de sesgo de muestreo (Terzaghi), solicitando `Azimut línea (°)` e `Inclinación (°)`.
+- **Botón `Ejecutar análisis`:** Botón destacado en color azul marino ubicado al final de este paso, que ejecuta de inmediato el cálculo cinemático y actualiza los gráficos y veredictos.
 
-| Casilla | Qué agrega al gráfico |
-| :--- | :--- |
-| `Marcas exteriores` | Las marcas de grado en el borde exterior del círculo (N, S, E, W y cada 10°). |
-| `Cruz central` | Una pequeña cruz en el centro geométrico del círculo. |
-| `Ejes N-S / E-W` | Dos líneas que cruzan el círculo de polo a polo (Norte–Sur y Este–Oeste). |
-| `Círculo borde` | El círculo exterior que enmarca toda la proyección. |
+---
+
+### 5.5 5 · CRITERIO DEL RESUMEN
+
+- **`Porcentaje crítico de discontinuidades (%)` [Umbral]:** Control deslizante de 0% a 50% (valor predeterminado: **10.00%**, según el criterio estándar de Rocscience Dips). Define el porcentaje mínimo de polos o intersecciones en zona crítica necesario para declarar un mecanismo cinemáticamente admisible (**SÍ**) en las tarjetas del Inspector de Mecanismos y en las exportaciones ejecutivas.
 
 ---
 
 ## 6. EJECUTAR EL CÁLCULO
+
+El cálculo se puede lanzar de dos formas equivalentes:
+1. Desde el botón **`▶ Calcular`** de la barra de herramientas superior.
+2. Desde el botón azul **`Ejecutar análisis`** ubicado al final del paso **`4 · Parámetros del análisis`** en el panel izquierdo.
 
 > **Instrucción para Captura [FIG-06]:**
 > Captura de la parte izquierda de la barra de herramientas.

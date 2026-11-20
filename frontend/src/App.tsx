@@ -10,6 +10,7 @@ import {
   LogOut,
   Maximize2,
   Play,
+  RotateCcw,
   Shield,
   Sliders,
   Table2,
@@ -374,6 +375,17 @@ export default function App() {
       });
       triggerDownload(blob, dlName || 'cuna_criticas.xlsx');
     });
+  };
+
+  const handleClearData = () => {
+    setRows([]);
+    setDescartadas([]);
+    setFilename('Sin archivo');
+    setAnalisis(null);
+    setFiguraSrc(null);
+    setErrorMsg(null);
+    setFiltro({ tipos: null, persistencia_min: 0 });
+    notify('Datos y resultados limpiados correctamente.');
   };
 
   const handleLogout = async () => {
@@ -804,6 +816,17 @@ export default function App() {
             <span>{running ? 'Calculando…' : 'Calcular'}</span>
           </button>
 
+          <button
+            type="button"
+            disabled={rows.length === 0 && !analisis}
+            onClick={handleClearData}
+            className="px-2.5 py-1 border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-slate-50/80 rounded font-medium flex items-center gap-1.5 shadow-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+            title="Limpiar datos y análisis actuales"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Limpiar</span>
+          </button>
+
           <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
 
           <button
@@ -957,6 +980,10 @@ export default function App() {
           onChangeOpciones={setOpciones}
           onUploadFile={handleUploadFile}
           onLoadEjemplo={handleLoadEjemplo}
+          onClearData={handleClearData}
+          onRunAnalysis={() => runAnalysis()}
+          onOpenEditor={() => setShowEditor(true)}
+          running={running}
           uploading={uploading}
         />
 
@@ -1041,6 +1068,24 @@ export default function App() {
                     : 'max-w-full max-h-full object-contain select-none'
                 }
               />
+            ) : rows.length === 0 ? (
+              <div className="text-center p-8 max-w-md select-none">
+                <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <Upload className="w-5 h-5 text-slate-500" />
+                </div>
+                <h3 className="font-semibold text-slate-800 text-sm mb-1">Área de trabajo limpia</h3>
+                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                  Suba un archivo CSV o Excel desde el paso <strong className="text-slate-700">1 · Datos de entrada</strong> o cargue los datos de ejemplo para ejecutar el análisis.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleLoadEjemplo}
+                  className="px-3.5 py-1.5 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-medium text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Play className="w-3 h-3 fill-white" />
+                  <span>Cargar datos de ejemplo</span>
+                </button>
+              </div>
             ) : (
               <div className="text-xs text-slate-400 font-mono">
                 {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
