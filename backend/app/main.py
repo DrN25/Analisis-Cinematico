@@ -1,7 +1,8 @@
 """Punto de entrada FastAPI para GEMA-Cinemático."""
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.config import SYSTEM_CODE, get_cors_origins
@@ -28,6 +29,15 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/auth", tags=["Autenticación"])
 app.include_router(admin_router, prefix="/api/admin", tags=["Administración"])
 app.include_router(analisis_router, prefix="/api/analisis", tags=["Análisis Cinemático"])
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(_: Request, exc: Exception):
+    """Garantiza que cualquier error 500 no capturado incluya cabeceras CORS legibles."""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error interno en el servidor: {str(exc)}"},
+    )
 
 
 @app.get("/")

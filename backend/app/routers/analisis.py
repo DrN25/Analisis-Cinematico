@@ -179,9 +179,9 @@ async def parse_archivo(
     fname = file.filename or "archivo.csv"
     try:
         df_raw = leer_archivo(raw, fname)
+        return _parse_payload(df_raw, fname)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"No se pudo leer el archivo: {exc}") from exc
-    return _parse_payload(df_raw, fname)
 
 
 @router.post("/ejecutar")

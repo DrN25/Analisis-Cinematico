@@ -66,7 +66,18 @@ export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<
       ? (init.headers as Record<string, string> | undefined)
       : { 'Content-Type': 'application/json', ...(init.headers as Record<string, string> | undefined) },
   );
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  } catch (err) {
+    if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+      throw new ApiError(
+        0,
+        'No se pudo conectar con el servidor (Failed to fetch). Si el backend está en Render, puede estar iniciando tras inactividad o verifique la URL de la API y CORS.',
+      );
+    }
+    throw err;
+  }
   if (!res.ok) {
     throw await parseError(res);
   }
@@ -83,7 +94,18 @@ export async function apiBlob(
       ? (init.headers as Record<string, string> | undefined)
       : { 'Content-Type': 'application/json', ...(init.headers as Record<string, string> | undefined) },
   );
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  } catch (err) {
+    if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+      throw new ApiError(
+        0,
+        'No se pudo conectar con el servidor (Failed to fetch). Si el backend está en Render, puede estar iniciando tras inactividad o verifique la URL de la API y CORS.',
+      );
+    }
+    throw err;
+  }
   if (!res.ok) {
     throw await parseError(res);
   }

@@ -182,7 +182,17 @@ export const LeftSidebar: React.FC<Props> = ({
         {/* 1 · Datos de entrada */}
         <TreeGroup title="1 · Datos de entrada" defaultOpen={true}>
           <div className="space-y-2">
-            <span className={labelCls}>Archivo CSV o Excel</span>
+            <div className="flex items-center justify-between">
+              <span className={labelCls}>Archivo CSV o Excel</span>
+              <button
+                type="button"
+                onClick={onLoadEjemplo}
+                className="text-[11px] text-[#881337] hover:text-[#6F0F2C] hover:underline font-semibold cursor-pointer shrink-0 transition-colors"
+                title="Cargar conjunto de 36 discontinuidades de ejemplo"
+              >
+                Usar ejemplo
+              </button>
+            </div>
 
             {totalRows > 0 ? (
               <div className="bg-emerald-50/70 border border-emerald-200 rounded p-2 text-xs">
@@ -223,29 +233,20 @@ export const LeftSidebar: React.FC<Props> = ({
                 onClick={() => fileRef.current?.click()}
                 className="flex items-center justify-center gap-1.5 py-1 px-2 border border-slate-300 hover:bg-white bg-slate-50 rounded text-slate-700 text-xs font-medium transition-colors shadow-xs cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5 text-[#1F4E9C]" />
+                <Upload className="w-3.5 h-3.5 text-slate-600" />
                 <span>{uploading ? 'Leyendo…' : 'Subir archivo'}</span>
               </button>
               <button
                 type="button"
-                onClick={onLoadEjemplo}
-                className="flex items-center justify-center py-1 px-2 border border-slate-300 hover:bg-white bg-slate-50 text-slate-700 rounded text-xs font-medium transition-colors shadow-xs cursor-pointer"
+                disabled={totalRows === 0 && (!filename || filename === 'Sin archivo')}
+                onClick={onClearData}
+                className="flex items-center justify-center gap-1.5 py-1 px-2 border border-amber-300 hover:border-rose-400 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-amber-50/40 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+                title="Limpiar la carga del archivo anterior y reiniciar el área de trabajo"
               >
-                <span>Usar ejemplo</span>
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>Limpiar carga</span>
               </button>
             </div>
-
-            {/* Botón explícito de Limpiar carga */}
-            <button
-              type="button"
-              disabled={totalRows === 0 && (!filename || filename === 'Sin archivo')}
-              onClick={onClearData}
-              className="w-full py-1 px-2 border border-amber-300 hover:border-rose-400 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-amber-50/40 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
-              title="Limpiar la carga del archivo anterior y reiniciar el área de trabajo"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Limpiar carga</span>
-            </button>
 
             {tiposDisponibles.length > 0 && (
               <div className="pt-1 border-t border-slate-100">
@@ -658,12 +659,12 @@ export const LeftSidebar: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Botón Ejecutar Análisis en el paso 4 */}
+          {/* Botón Ejecutar Análisis en el paso 4 en gama de color vino/rojo */}
           <button
             type="button"
             disabled={running || totalRows === 0}
             onClick={onRunAnalysis}
-            className="w-full mt-1.5 py-1.5 px-3 bg-[#1D4ED8] hover:bg-[#1E40AF] text-white rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-full mt-1.5 py-1.5 px-3 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 fill-white" />
             <span>{running ? 'Calculando…' : 'Ejecutar análisis'}</span>
@@ -673,12 +674,12 @@ export const LeftSidebar: React.FC<Props> = ({
         {/* 5 · Criterio del resumen */}
         <TreeGroup title="5 · Criterio del resumen" defaultOpen={true}>
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-tight">
-                Porcentaje crítico de discontinuidades (%)
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-[10.5px] font-semibold text-slate-700 uppercase tracking-tight leading-tight">
+                Porcentaje crítico de discontinuidades
               </label>
-              <span className="font-mono font-bold text-xs text-[#881337]">
-                {umbral} %
+              <span className="font-mono font-bold text-xs text-[#881337] whitespace-nowrap shrink-0 px-1.5 py-0.5 bg-rose-50 border border-rose-200 rounded">
+                {umbral}%
               </span>
             </div>
             <input
