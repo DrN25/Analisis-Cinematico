@@ -12,7 +12,7 @@ from app.routers.analisis import router as analisis_router
 from app.routers.auth import router as auth_router
 
 app = FastAPI(
-    title="GEMA-Cinemático API",
+    title="Análisis Cinemático API",
     description="API de análisis cinemático de taludes (Dips v9) con autenticación y auditoría.",
     version="1.0.0",
 )
@@ -42,7 +42,7 @@ async def global_exception_handler(_: Request, exc: Exception):
 
 @app.get("/")
 def read_root():
-    return {"status": "online", "service": "GEMA-Cinemático API", "sistema": SYSTEM_CODE}
+    return {"status": "online", "service": "Análisis Cinemático API", "sistema": SYSTEM_CODE}
 
 
 @app.get("/api/health")

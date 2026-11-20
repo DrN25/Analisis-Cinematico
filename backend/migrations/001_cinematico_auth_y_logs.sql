@@ -63,7 +63,7 @@ BEGIN TRY
     IF @sysId IS NULL
     BEGIN
         INSERT INTO auth.Sistemas (Codigo, Nombre, Estado)
-        VALUES (N'cinematico', N'GEMA-Cinemático', 'A');
+        VALUES (N'cinematico', N'Análisis Cinemático', 'A');
         SET @sysId = SCOPE_IDENTITY();
     END;
 
@@ -93,7 +93,7 @@ BEGIN TRY
         VALUES (
             @sysId, 1, 0,
             N'ADMIN',
-            N'admin.cinematico@gema.com',
+            N'admin@cinematico.com',
             N'$2b$12$Y89zKo06HBqiD6cu/S5ilOMPnsER8rG0eJ4Oosmlji8xxksOWzuKq',
             N'Administrador Cinemático',
             @adminRolId,
