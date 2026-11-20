@@ -24,9 +24,9 @@ import { AdminModal } from './components/AdminModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { DataEditorModal } from './components/DataEditorModal';
 import { HelpModal } from './components/HelpModal';
-import { HelpTooltip } from './components/HelpTooltip';
 import { LeftSidebar } from './components/LeftSidebar';
 import { LoginView } from './components/LoginView';
+import { NumberInput } from './components/NumberInput';
 import {
   AnalisisResponse,
   DEFAULT_OPCIONES_PLOT,
@@ -620,90 +620,52 @@ export default function App() {
 
                 {/* Espaciados y Grosores */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      Espaciado marcas (°)
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={45}
-                      step={1}
-                      value={opciones.espaciado_marcas ?? 10}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, espaciado_marcas: Number(e.target.value) || 10 })
-                      }
-                      className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      Intervalo de red (°)
-                    </label>
-                    <input
-                      type="number"
-                      min={2}
-                      max={30}
-                      step={1}
-                      value={opciones.intervalo_red ?? 10}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, intervalo_red: Number(e.target.value) || 10 })
-                      }
-                      className="w-full px-2 py-1 border border-slate-300 rounded font-mono text-xs"
-                    />
-                  </div>
+                  <NumberInput
+                    label="Espaciado de marcas (°)"
+                    value={opciones.espaciado_marcas ?? 10}
+                    min={1}
+                    max={45}
+                    step={1}
+                    onChange={(v) => setOpciones({ ...opciones, espaciado_marcas: v })}
+                  />
+                  <NumberInput
+                    label="Intervalo de la red (°)"
+                    value={opciones.intervalo_red ?? 10}
+                    min={2}
+                    max={30}
+                    step={1}
+                    onChange={(v) => setOpciones({ ...opciones, intervalo_red: v })}
+                  />
                 </div>
 
                 <div className="grid grid-cols-3 gap-1.5">
-                  <div>
-                    <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
-                      <span>Borde</span> <HelpTooltip text="Grosor del círculo exterior" />
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      value={opciones.ancho_borde ?? 3}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, ancho_borde: Number(e.target.value) || 3 })
-                      }
-                      className="w-full px-1.5 py-1 border border-slate-300 rounded font-mono text-xs text-center"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
-                      <span>Interno</span> <HelpTooltip text="Grosor de las líneas internas" />
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      value={opciones.ancho_interno ?? 1}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, ancho_interno: Number(e.target.value) || 1 })
-                      }
-                      className="w-full px-1.5 py-1 border border-slate-300 rounded font-mono text-xs text-center"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10.5px] font-medium text-slate-600 mb-0.5">
-                      <span>Red</span> <HelpTooltip text="Grosor de la red" />
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      value={opciones.ancho_superposicion ?? 1}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, ancho_superposicion: Number(e.target.value) || 1 })
-                      }
-                      className="w-full px-1.5 py-1 border border-slate-300 rounded font-mono text-xs text-center"
-                    />
-                  </div>
+                  <NumberInput
+                    label="Borde"
+                    value={opciones.ancho_borde ?? 3}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    help="Grosor del círculo exterior"
+                    onChange={(v) => setOpciones({ ...opciones, ancho_borde: v })}
+                  />
+                  <NumberInput
+                    label="Interno"
+                    value={opciones.ancho_interno ?? 1}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    help="Grosor de las líneas internas"
+                    onChange={(v) => setOpciones({ ...opciones, ancho_interno: v })}
+                  />
+                  <NumberInput
+                    label="Red"
+                    value={opciones.ancho_superposicion ?? 1}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    help="Grosor de la red"
+                    onChange={(v) => setOpciones({ ...opciones, ancho_superposicion: v })}
+                  />
                 </div>
 
                 {/* Filtros de planos e intersecciones */}
@@ -861,23 +823,37 @@ export default function App() {
                   </label>
                 </div>
 
-                {/* Resolución de exportación */}
-                <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
-                  <label className="text-[11px] font-medium text-slate-600">
-                    Resolución de exportación
-                  </label>
-                  <select
-                    value={opciones.dpi_exportar ?? 300}
-                    onChange={(e) =>
-                      setOpciones({ ...opciones, dpi_exportar: Number(e.target.value) })
-                    }
-                    className="px-2 py-0.5 border border-slate-300 rounded font-mono text-xs"
-                  >
-                    <option value={150}>150 dpi</option>
-                    <option value={200}>200 dpi</option>
-                    <option value={300}>300 dpi</option>
-                    <option value={600}>600 dpi</option>
-                  </select>
+                {/* Resolución al exportar (dpi) */}
+                <div className="pt-1 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[11px] font-medium text-slate-600">
+                      Resolución al exportar (dpi)
+                    </label>
+                    <span className="font-mono text-xs text-[#881337] font-semibold">
+                      {opciones.dpi_exportar ?? 300} dpi
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={3}
+                    step={1}
+                    value={(() => {
+                      const idx = [150, 200, 300, 600].indexOf(opciones.dpi_exportar ?? 300);
+                      return idx >= 0 ? idx : 2;
+                    })()}
+                    onChange={(e) => {
+                      const values = [150, 200, 300, 600];
+                      setOpciones({ ...opciones, dpi_exportar: values[Number(e.target.value)] });
+                    }}
+                    className="w-full accent-[#881337] h-1.5 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-mono px-0.5 mt-0.5">
+                    <span>150</span>
+                    <span>200</span>
+                    <span>300</span>
+                    <span>600</span>
+                  </div>
                 </div>
               </div>
             )}

@@ -10,6 +10,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { HelpTooltip } from './HelpTooltip';
+import { NumberInput } from './NumberInput';
 import {
   DipsParams,
   FiltroParams,
@@ -42,8 +43,6 @@ interface Props {
   uploading: boolean;
 }
 
-const inputCls =
-  'w-full min-w-0 px-2 py-1 text-xs bg-white border border-slate-300 rounded focus:outline-none focus:border-[#881337] focus:ring-1 focus:ring-[#881337]/20 font-mono';
 const selectCls =
   'w-full min-w-0 px-2 py-1 text-xs bg-white border border-slate-300 rounded focus:outline-none focus:border-[#881337] truncate';
 const labelCls = 'block text-[11px] font-medium text-slate-700 mb-0.5 select-none truncate';
@@ -254,23 +253,19 @@ export const LeftSidebar: React.FC<Props> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
-              <label className="text-xs text-slate-700 font-medium truncate flex items-center gap-1">
-                <span>Persistencia mínima (m)</span>
-                <HelpTooltip text="Se excluyen las estructuras más cortas. 0 = sin filtro." />
-              </label>
-              <input
-                type="number"
+            <div className="pt-1 border-t border-slate-100">
+              <NumberInput
+                label="Persistencia mínima (m)"
                 min={0}
                 step={0.5}
                 value={filtro.persistencia_min}
-                onChange={(e) =>
+                help="Se excluyen las estructuras más cortas. 0 = sin filtro."
+                onChange={(val) =>
                   onChangeFiltro({
                     ...filtro,
-                    persistencia_min: Math.max(0, Number(e.target.value) || 0),
+                    persistencia_min: Math.max(0, val),
                   })
                 }
-                className="w-20 px-2 py-0.5 text-xs text-right border border-slate-300 rounded font-mono focus:outline-none focus:border-[#881337]"
               />
             </div>
           </div>
@@ -446,103 +441,82 @@ export const LeftSidebar: React.FC<Props> = ({
           {/* 3 · Geometría del talud */}
           <TreeGroup title="3 · Geometría del talud" defaultOpen={true}>
             <div className="grid grid-cols-2 gap-2 min-w-0">
-              <div className="min-w-0">
-                <label className={labelCls}>Buzamiento ψs (°)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={90}
-                  step={1}
-                  value={talud.buz}
-                  onChange={(e) =>
-                    onChangeTalud({
-                      ...talud,
-                      buz: Math.min(90, Math.max(1, Number(e.target.value) || 1)),
-                    })
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className={labelCls}>Dir. de buzamiento αs (°)</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={359.9}
-                  step={1}
-                  value={talud.dirbuz}
-                  onChange={(e) =>
-                    onChangeTalud({
-                      ...talud,
-                      dirbuz: Math.min(359.9, Math.max(0, Number(e.target.value) || 0)),
-                    })
-                  }
-                  className={inputCls}
-                />
-              </div>
+              <NumberInput
+                label="Buzamiento ψs (°)"
+                min={1}
+                max={90}
+                step={1}
+                value={talud.buz}
+                onChange={(val) =>
+                  onChangeTalud({
+                    ...talud,
+                    buz: Math.min(90, Math.max(1, val)),
+                  })
+                }
+              />
+              <NumberInput
+                label="Dir. de buzamiento αs (°)"
+                min={0}
+                max={359.9}
+                step={1}
+                value={talud.dirbuz}
+                onChange={(val) =>
+                  onChangeTalud({
+                    ...talud,
+                    dirbuz: Math.min(359.9, Math.max(0, val)),
+                  })
+                }
+              />
             </div>
           </TreeGroup>
 
           {/* 4 · Parámetros del análisis */}
           <TreeGroup title="4 · Parámetros del análisis" defaultOpen={true}>
-            <div>
-              <label className={labelCls}>Ángulo de fricción φ (°)</label>
-              <input
-                type="number"
-                min={0}
-                max={89}
-                step={1}
-                value={parametros.phi}
-                onChange={(e) =>
-                  onChangeParametros({
-                    ...parametros,
-                    phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
-                  })
-                }
-                className={inputCls}
-              />
-            </div>
+            <NumberInput
+              label="Ángulo de fricción φ (°)"
+              min={0}
+              max={89}
+              step={1}
+              value={parametros.phi}
+              onChange={(val) =>
+                onChangeParametros({
+                  ...parametros,
+                  phi: Math.min(89, Math.max(0, val)),
+                })
+              }
+            />
 
             <div className="grid grid-cols-3 gap-1.5 min-w-0">
-              <div className="min-w-0">
-                <label className={labelCls}>LL planar ±°</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={90}
-                  value={parametros.ll_planar}
-                  onChange={(e) =>
-                    onChangeParametros({ ...parametros, ll_planar: Number(e.target.value) || 0 })
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className={labelCls}>LL flexural ±°</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={90}
-                  value={parametros.ll_flexural}
-                  onChange={(e) =>
-                    onChangeParametros({ ...parametros, ll_flexural: Number(e.target.value) || 0 })
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className={labelCls}>LL directo ±°</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={90}
-                  value={parametros.ll_directo}
-                  onChange={(e) =>
-                    onChangeParametros({ ...parametros, ll_directo: Number(e.target.value) || 0 })
-                  }
-                  className={inputCls}
-                />
-              </div>
+              <NumberInput
+                label="LL planar ±°"
+                min={0}
+                max={90}
+                step={1}
+                value={parametros.ll_planar}
+                onChange={(val) =>
+                  onChangeParametros({ ...parametros, ll_planar: val })
+                }
+              />
+              <NumberInput
+                label="LL flexural ±°"
+                min={0}
+                max={90}
+                step={1}
+                value={parametros.ll_flexural}
+                onChange={(val) =>
+                  onChangeParametros({ ...parametros, ll_flexural: val })
+                }
+              />
+              <NumberInput
+                label="LL directo ±°"
+                min={0}
+                max={90}
+                step={1}
+                value={parametros.ll_directo}
+                onChange={(val) =>
+                  onChangeParametros({ ...parametros, ll_directo: val })
+                }
+              />
             </div>
 
             <p className="text-[10.5px] text-slate-500 italic">
