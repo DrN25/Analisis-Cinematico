@@ -68,6 +68,7 @@ def evaluar_cuna(intersecciones, talud, param):
         "P1 · desliza en un plano (zona primaria)",
         "P1 · desliza en un plano (zona secundaria)",
         "No crítica",
+        "Excluida: plano paralelo al talud",
     ]
     r["Clasificacion"] = pd.Categorical(
         np.select([primaria & ~un_plano, un_plano, secundaria],
