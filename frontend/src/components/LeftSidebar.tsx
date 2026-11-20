@@ -40,7 +40,6 @@ interface Props {
   onOpenEditor: () => void;
   running: boolean;
   uploading: boolean;
-  hasPendingChanges?: boolean;
 }
 
 const inputCls =
@@ -98,7 +97,6 @@ export const LeftSidebar: React.FC<Props> = ({
   onOpenEditor,
   running,
   uploading,
-  hasPendingChanges = false,
 }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -225,15 +223,10 @@ export const LeftSidebar: React.FC<Props> = ({
                 disabled={totalRows === 0 && (!filename || filename === 'Sin archivo')}
                 onClick={onClearData}
                 className="flex items-center justify-center gap-1.5 py-1 px-2 border border-amber-300 hover:border-rose-400 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-amber-50/40 rounded text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-xs cursor-pointer"
-                title="Limpiar la carga del archivo anterior y reiniciar el área de trabajo"
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                 <span>Limpiar carga</span>
               </button>
-            </div>
-            <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono px-0.5">
-              <span>Límite: máx. 80 KB</span>
-              <span>CSV, TXT, XLSX</span>
             </div>
 
             {tiposDisponibles.length > 0 && (
@@ -408,7 +401,6 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
                 <span>Tamaño por persistencia</span>
               </label>
-              <HelpTooltip text="Multiplica el tamaño base del símbolo por la clase de persistencia (ISRM)." />
             </div>
 
             <div className="flex items-center justify-between">
@@ -453,21 +445,9 @@ export const LeftSidebar: React.FC<Props> = ({
         >
           {/* 3 · Geometría del talud */}
           <TreeGroup title="3 · Geometría del talud" defaultOpen={true}>
-            <div>
-              <label className={labelCls}>Nombre del talud</label>
-              <input
-                type="text"
-                value={talud.nombre}
-                onChange={(e) => onChangeTalud({ ...talud, nombre: e.target.value })}
-                className={inputCls}
-              />
-            </div>
             <div className="grid grid-cols-2 gap-2 min-w-0">
               <div className="min-w-0">
-                <label className={`${labelCls} flex items-center gap-1`}>
-                  <span>Buzamiento ψs (°)</span>
-                  <HelpTooltip text="Inclinación del plano del talud respecto a la horizontal (1° a 90°)." />
-                </label>
+                <label className={labelCls}>Buzamiento ψs (°)</label>
                 <input
                   type="number"
                   min={1}
@@ -484,10 +464,7 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
               </div>
               <div className="min-w-0">
-                <label className={`${labelCls} flex items-center gap-1`}>
-                  <span>Dir. buzamiento αs (°)</span>
-                  <HelpTooltip text="Dirección azimutal de buzamiento del talud respecto al Norte (0° a 359.9°)." />
-                </label>
+                <label className={labelCls}>Dir. de buzamiento αs (°)</label>
                 <input
                   type="number"
                   min={0}
@@ -508,51 +485,27 @@ export const LeftSidebar: React.FC<Props> = ({
 
           {/* 4 · Parámetros del análisis */}
           <TreeGroup title="4 · Parámetros del análisis" defaultOpen={true}>
-            <div className="grid grid-cols-2 gap-2 min-w-0">
-              <div className="min-w-0">
-                <label className={`${labelCls} flex items-center gap-1`}>
-                  <span>Ángulo de fricción φ (°)</span>
-                  <HelpTooltip text="Ángulo de fricción interna del macizo rocoso para el cono de fricción (0° a 89°)." />
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={89}
-                  step={1}
-                  value={parametros.phi}
-                  onChange={(e) =>
-                    onChangeParametros({
-                      ...parametros,
-                      phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
-                    })
-                  }
-                  className={inputCls}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className={labelCls}>Ponderación</label>
-                <select
-                  value={parametros.ponderacion}
-                  onChange={(e) =>
-                    onChangeParametros({
-                      ...parametros,
-                      ponderacion: e.target.value as 'ninguna' | 'terzaghi',
-                    })
-                  }
-                  className={selectCls}
-                >
-                  <option value="ninguna">Ninguna</option>
-                  <option value="terzaghi">Terzaghi</option>
-                </select>
-              </div>
+            <div>
+              <label className={labelCls}>Ángulo de fricción φ (°)</label>
+              <input
+                type="number"
+                min={0}
+                max={89}
+                step={1}
+                value={parametros.phi}
+                onChange={(e) =>
+                  onChangeParametros({
+                    ...parametros,
+                    phi: Math.min(89, Math.max(0, Number(e.target.value) || 0)),
+                  })
+                }
+                className={inputCls}
+              />
             </div>
 
             <div className="grid grid-cols-3 gap-1.5 min-w-0">
               <div className="min-w-0">
-                <label className={`${labelCls} flex items-center gap-1`}>
-                  <span>LL planar ±°</span>
-                  <HelpTooltip text="Límite lateral angular para rotura planar (±° respecto a la dirección del talud)." />
-                </label>
+                <label className={labelCls}>LL planar ±°</label>
                 <input
                   type="number"
                   min={0}
@@ -565,10 +518,7 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
               </div>
               <div className="min-w-0">
-                <label className={`${labelCls} flex items-center gap-1`}>
-                  <span>LL flexural ±°</span>
-                  <HelpTooltip text="Límite lateral angular para toppling flexural (±°)." />
-                </label>
+                <label className={labelCls}>LL flexural ±°</label>
                 <input
                   type="number"
                   min={0}
@@ -581,10 +531,7 @@ export const LeftSidebar: React.FC<Props> = ({
                 />
               </div>
               <div className="min-w-0">
-                <label className={`${labelCls} flex items-center gap-1`}>
-                  <span>LL directo ±°</span>
-                  <HelpTooltip text="Límite lateral angular para toppling directo (±°)." />
-                </label>
+                <label className={labelCls}>LL directo ±°</label>
                 <input
                   type="number"
                   min={0}
@@ -602,61 +549,13 @@ export const LeftSidebar: React.FC<Props> = ({
               LL: límite lateral.
             </p>
 
-            {parametros.ponderacion === 'terzaghi' && (
-              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 min-w-0">
-                <div className="min-w-0">
-                  <label className={labelCls}>Azimut línea (°)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={359.9}
-                    value={parametros.azimut_muestreo}
-                    onChange={(e) =>
-                      onChangeParametros({
-                        ...parametros,
-                        azimut_muestreo: Number(e.target.value) || 0,
-                      })
-                    }
-                    className={inputCls}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <label className={labelCls}>Inclinación (°)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={90}
-                    value={parametros.inclinacion_muestreo}
-                    onChange={(e) =>
-                      onChangeParametros({
-                        ...parametros,
-                        inclinacion_muestreo: Number(e.target.value) || 0,
-                      })
-                    }
-                    className={inputCls}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Botón Ejecutar Análisis en el paso 4 en gama de color vino/rojo */}
             <button
               type="submit"
               disabled={running || totalRows === 0}
-              className={`w-full mt-1.5 py-1.5 px-3 rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer ${
-                hasPendingChanges
-                  ? 'bg-[#881337] hover:bg-[#6F0F2C] text-white ring-2 ring-[#881337]/30'
-                  : 'bg-[#881337] hover:bg-[#6F0F2C] text-white'
-              }`}
+              className="w-full mt-1.5 py-1.5 px-3 rounded font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer bg-[#881337] hover:bg-[#6F0F2C] text-white"
             >
               <Play className="w-3.5 h-3.5 fill-white" />
-              <span>
-                {running
-                  ? 'Calculando…'
-                  : hasPendingChanges
-                  ? 'Ejecutar análisis · Cambios pendientes'
-                  : 'Ejecutar análisis'}
-              </span>
+              <span>{running ? 'Calculando…' : 'Ejecutar análisis'}</span>
             </button>
           </TreeGroup>
         </form>
@@ -685,9 +584,6 @@ export const LeftSidebar: React.FC<Props> = ({
               onChange={(e) => onChangeUmbral(Number(e.target.value))}
               className="w-full accent-[#881337] h-1.5 cursor-pointer"
             />
-            <p className="text-[10.5px] text-slate-500 italic">
-              Umbral mínimo para considerar un mecanismo como cinemáticamente posible en el informe y resumen.
-            </p>
           </div>
         </TreeGroup>
       </div>

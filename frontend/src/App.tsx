@@ -423,14 +423,6 @@ export default function App() {
       ? `Advertencia: toppling oblicuo (C2) con ${oblicuo.porcentaje.toFixed(1)} % de intersecciones críticas, mayor a ${umbral} %.`
       : '';
 
-  const hasPendingChanges = Boolean(
-    analisis &&
-      (analisis.contexto.buz !== talud.buz ||
-        analisis.contexto.dirbuz !== talud.dirbuz ||
-        analisis.contexto.phi !== parametros.phi ||
-        analisis.contexto.nombre !== talud.nombre),
-  );
-
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-slate-100 text-slate-800 font-sans select-none">
       <input
@@ -908,7 +900,7 @@ export default function App() {
             {showDescargas && (
               <div className="absolute right-0 top-full mt-1 w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2">
                 <p className="text-[11px] text-slate-500 italic pb-1 border-b border-slate-100 leading-snug">
-                  Los archivos se generan en tu equipo; los datos no se suben a ningún servidor externo.
+                  Los archivos se generan en tu equipo; los datos no se suben a ningún servidor.
                 </p>
 
                 <button
@@ -1034,7 +1026,6 @@ export default function App() {
             onOpenEditor={() => setShowEditor(true)}
             running={running}
             uploading={uploading}
-            hasPendingChanges={hasPendingChanges}
           />
 
           {/* Viewport Central */}
