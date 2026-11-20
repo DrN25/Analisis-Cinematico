@@ -6,6 +6,7 @@ services:
     env_file:
       - ./backend/.env
     ports:
+      - "80:8002"
       - "8002:8002"
     mem_limit: 1536m
     restart: unless-stopped
