@@ -9,7 +9,6 @@ import {
   Image as ImageIcon,
   KeyRound,
   LogOut,
-  Play,
   Shield,
   Upload,
 } from 'lucide-react';
@@ -310,24 +309,6 @@ export default function App() {
     }
   };
 
-  const handleLoadEjemplo = async () => {
-    setUploading(true);
-    try {
-      const ej = await apiJson<ParseArchivoResponse>('/api/analisis/ejemplo');
-      setFilename(ej.filename);
-      setRows(ej.rows);
-      setDescartadas(ej.descartadas);
-      setTiposConteo(ej.tipos_conteo);
-      const resetFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
-      setFiltro(resetFiltro);
-      await runAnalysis(ej.rows, resetFiltro);
-      notify(`Ejemplo cargado: ${ej.rows.length} datos`);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al cargar ejemplo.');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const withAnalysisRetry = async (action: (analysisId: string) => Promise<void>) => {
     if (!analisis) return;
@@ -1060,7 +1041,6 @@ export default function App() {
             opciones={opciones}
             onChangeOpciones={setOpciones}
             onUploadFile={handleUploadFile}
-            onLoadEjemplo={handleLoadEjemplo}
             onClearData={handleClearData}
             onRunAnalysis={() => runAnalysis()}
             onOpenEditor={() => setShowEditor(true)}
@@ -1174,17 +1154,9 @@ export default function App() {
                     <Upload className="w-5 h-5 text-slate-500" />
                   </div>
                   <h3 className="font-semibold text-slate-800 text-sm mb-1">Área de trabajo limpia</h3>
-                  <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-                    Suba un archivo CSV o Excel desde el paso <strong className="text-slate-700">1 · Datos de entrada</strong> o cargue los datos de ejemplo para ejecutar el análisis.
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Suba un archivo CSV o Excel desde el paso <strong className="text-slate-700">1 · Datos de entrada</strong> en el panel lateral para ejecutar el análisis.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleLoadEjemplo}
-                    className="px-3.5 py-1.5 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-medium text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                  >
-                    <Play className="w-3 h-3 fill-white" />
-                    <span>Cargar datos de ejemplo</span>
-                  </button>
                 </div>
               ) : (
                 <div className="text-xs text-slate-400 font-mono">

@@ -34,7 +34,6 @@ interface Props {
   opciones: OpcionesPlot;
   onChangeOpciones: (o: OpcionesPlot) => void;
   onUploadFile: (file: File) => void;
-  onLoadEjemplo: () => void;
   onClearData: () => void;
   onRunAnalysis: () => void;
   onOpenEditor: () => void;
@@ -93,7 +92,6 @@ export const LeftSidebar: React.FC<Props> = ({
   opciones,
   onChangeOpciones,
   onUploadFile,
-  onLoadEjemplo,
   onClearData,
   onRunAnalysis,
   onOpenEditor,
@@ -174,17 +172,7 @@ export const LeftSidebar: React.FC<Props> = ({
         {/* 1 · Datos de entrada */}
         <TreeGroup title="1 · Datos de entrada" defaultOpen={true}>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className={labelCls}>Archivo CSV o Excel</span>
-              <button
-                type="button"
-                onClick={onLoadEjemplo}
-                className="text-[11px] text-[#881337] hover:text-[#6F0F2C] hover:underline font-semibold cursor-pointer shrink-0 transition-colors"
-                title="Cargar conjunto de 36 discontinuidades de ejemplo"
-              >
-                Usar ejemplo
-              </button>
-            </div>
+            <span className={labelCls}>Archivo CSV o Excel</span>
 
             {totalRows > 0 ? (
               <div className="bg-emerald-50/70 border border-emerald-200 rounded p-2 text-xs">
