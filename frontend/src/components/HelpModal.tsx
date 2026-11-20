@@ -25,7 +25,7 @@ export const HelpModal: React.FC<Props> = ({ onClose }) => {
                   tab === 'ayuda' ? 'bg-white text-[#881337] shadow-sm' : 'text-slate-600'
                 }`}
               >
-                Criterios Dips
+                Criterios cinemáticos
               </button>
               <button
                 type="button"
@@ -54,10 +54,10 @@ export const HelpModal: React.FC<Props> = ({ onClose }) => {
                 <h3 className="font-display text-sm font-semibold text-slate-900">Cómo usar</h3>
                 <ol className="list-decimal pl-5 space-y-1">
                   <li><b>Datos de entrada:</b> sube un CSV o Excel, o edita la tabla. Sin archivo se usan los datos de ejemplo (36 discontinuidades).</li>
-                  <li><b>Geometría y parámetros:</b> configura ψs, αs, φ y límites laterales en la pestaña <i>Análisis</i> y pulsa <b>Ejecutar análisis</b>.</li>
-                  <li><b>Resumen SÍ / NO:</b> las tarjetas superiores permiten cambiar de vista; el umbral de % crítico se ajusta sin recalcular.</li>
-                  <li><b>Plot y Red:</b> las pestañas <i>Plot</i> y <i>Red</i> (Stereonet Options) solo redibujan el estereograma.</li>
-                  <li><b>Descargas:</b> exporta el libro Excel completo, PNG de alta resolución, ZIP o CSV por tabla.</li>
+                  <li><b>Geometría y parámetros:</b> configura ψs, αs, φ y límites laterales en el panel de opciones y pulsa <b>Recalcular</b>.</li>
+                  <li><b>Resumen SÍ / NO:</b> las tarjetas del inspector permiten cambiar de vista; el umbral de % crítico se ajusta sin recalcular.</li>
+                  <li><b>Opciones de estereograma:</b> la sección de estereograma redibuja el gráfico sin recalcular.</li>
+                  <li><b>Descargas:</b> exporta en Excel, PNG, ZIP o CSV por tabla.</li>
                 </ol>
               </section>
 

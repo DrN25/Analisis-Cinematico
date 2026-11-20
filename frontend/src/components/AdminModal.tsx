@@ -116,7 +116,7 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
   const handleExportLogsCsv = async () => {
     try {
       const { blob, filename } = await apiBlob(`/api/admin/logs/csv${buildLogsQuery()}`);
-      triggerDownload(blob, filename || 'gema_cinematico_logs.csv');
+      triggerDownload(blob, filename || 'cinematico_logs.csv');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error exportando CSV.');
     }
@@ -399,7 +399,7 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
             <div className="lg:col-span-8 flex flex-col min-h-0">
               <div className="flex items-center justify-between mb-2 shrink-0">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Cuentas de GEMA-Cinemático
+                  Cuentas de Acceso
                 </h3>
                 {usersLoading && <span className="text-xs text-slate-400">Cargando…</span>}
               </div>
@@ -582,7 +582,7 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
                       required
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      placeholder="usuario@gema.com"
+                      placeholder="usuario@correo.com"
                       className="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
                     />
                   </div>

@@ -2,15 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
-  BookOpen,
   CheckCircle2,
+  Columns,
   FileSpreadsheet,
   Image as ImageIcon,
   KeyRound,
   LogOut,
+  Maximize2,
+  Play,
   Shield,
+  Sliders,
+  Table2,
+  Upload,
   ZoomIn,
-  ZoomOut,
 } from 'lucide-react';
 import {
   ApiError,
@@ -42,13 +46,15 @@ import {
   VistaKey,
 } from './types';
 
+type MenuKey = 'archivo' | 'editar' | 'analisis' | 'ver' | 'herramientas' | 'ayuda';
+
 const VISTAS: { id: VistaKey; label: string }[] = [
-  { id: 'general', label: 'General' },
-  { id: 'planar', label: 'Planar' },
-  { id: 'cuna', label: 'Cuña' },
-  { id: 'flexural', label: 'T. Flexural' },
-  { id: 'directo', label: 'T. Directo' },
-  { id: 'roseta', label: 'Roseta' },
+  { id: 'general', label: 'Estereograma General' },
+  { id: 'planar', label: 'Rotura Planar' },
+  { id: 'cuna', label: 'Rotura en Cuña' },
+  { id: 'flexural', label: 'Toppling Flexural' },
+  { id: 'directo', label: 'Toppling Directo' },
+  { id: 'roseta', label: 'Roseta de Rumbos' },
 ];
 
 export default function App() {
@@ -56,6 +62,9 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
+
   const [filename, setFilename] = useState('discontinuidades_ejemplo.csv');
   const [rows, setRows] = useState<DiscontinuidadRow[]>([]);
   const [descartadas, setDescartadas] = useState<DescartadaRow[]>([]);
@@ -92,13 +101,15 @@ export default function App() {
   const [showPwd, setShowPwd] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const menuBarRef = useRef<HTMLDivElement | null>(null);
   const skipNextRedrawRef = useRef(false);
   const toastTimerRef = useRef<number | null>(null);
 
   const notify = useCallback((msg: string) => {
     setToastMsg(msg);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 5000);
+    toastTimerRef.current = window.setTimeout(() => setToastMsg(null), 4000);
   }, []);
 
   useEffect(() => {
@@ -107,6 +118,29 @@ export default function App() {
       setAnalisis(null);
       setFiguraSrc(null);
     });
+  }, []);
+
+  // Cierre de menús al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuBarRef.current && !menuBarRef.current.contains(e.target as Node)) {
+        setActiveMenu(null);
+      }
+    };
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // F1 para ayuda
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setShowHelp(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const runAnalysis = useCallback(
@@ -179,8 +213,7 @@ export default function App() {
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'No se pudo cargar el ejemplo inicial.');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [talud, parametros, umbral, opciones]);
 
   useEffect(() => {
     const tok = getToken();
@@ -233,8 +266,7 @@ export default function App() {
     }, 140);
 
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vista, opciones]);
+  }, [vista, opciones, analisis?.analysis_id, runAnalysis]);
 
   const handleUploadFile = async (file: File) => {
     setUploading(true);
@@ -253,8 +285,9 @@ export default function App() {
       const resetFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
       setFiltro(resetFiltro);
       await runAnalysis(parsed.rows, resetFiltro);
-      const descTxt = parsed.descartadas.length > 0 ? ` (${parsed.descartadas.length} descartadas)` : '';
-      notify(`Archivo cargado: ${parsed.filename} · ${parsed.rows.length} discontinuidades válidas${descTxt}`);
+      const descTxt =
+        parsed.descartadas.length > 0 ? ` (${parsed.descartadas.length} descartadas)` : '';
+      notify(`Archivo cargado: ${parsed.filename} · ${parsed.rows.length} datos${descTxt}`);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'No se pudo leer el archivo.');
     } finally {
@@ -273,9 +306,9 @@ export default function App() {
       const resetFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
       setFiltro(resetFiltro);
       await runAnalysis(ej.rows, resetFiltro);
-      notify(`Datos de ejemplo cargados: ${ej.rows.length} discontinuidades`);
+      notify(`Ejemplo cargado: ${ej.rows.length} datos`);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error cargando ejemplo.');
+      setErrorMsg(err instanceof Error ? err.message : 'Error al cargar ejemplo.');
     } finally {
       setUploading(false);
     }
@@ -322,10 +355,13 @@ export default function App() {
 
   const handleExportTableCsv = async (tabla: TablaExportKey) => {
     await withAnalysisRetry(async (analysisId) => {
-      const { blob, filename: dlName } = await apiBlob(`/api/analisis/exportar/tabla-csv/${tabla}`, {
-        method: 'POST',
-        body: JSON.stringify({ analysis_id: analysisId, vista, umbral, opciones }),
-      });
+      const { blob, filename: dlName } = await apiBlob(
+        `/api/analisis/exportar/tabla-csv/${tabla}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ analysis_id: analysisId, vista, umbral, opciones }),
+        },
+      );
       triggerDownload(blob, dlName || `${tabla}.csv`);
     });
   };
@@ -354,8 +390,8 @@ export default function App() {
 
   if (authChecking) {
     return (
-      <div className="h-screen flex items-center justify-center bg-slate-50 text-sm text-slate-500">
-        Verificando sesión…
+      <div className="h-screen flex items-center justify-center bg-slate-100 text-xs font-mono text-slate-500">
+        Iniciando sesión…
       </div>
     );
   }
@@ -378,11 +414,23 @@ export default function App() {
   const posibles = veredictosActivos.filter((v) => v.posible);
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-slate-100">
-      {/* Toast de notificación al cargar archivo */}
+    <div className="h-screen overflow-hidden flex flex-col bg-slate-100 text-slate-800 font-sans select-none">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,.txt,.xlsx,.xlsm,.xls"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleUploadFile(f);
+          e.target.value = '';
+        }}
+      />
+
+      {/* Toast de notificación */}
       {toastMsg && (
-        <div className="fixed top-14 right-4 z-50 bg-slate-900 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="fixed top-14 right-4 z-50 bg-slate-900 text-white text-xs px-3.5 py-2 rounded shadow-lg border border-slate-700 flex items-center gap-2">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           <span>{toastMsg}</span>
           <button
             type="button"
@@ -394,119 +442,502 @@ export default function App() {
         </div>
       )}
 
-      {/* Barra superior ejecutiva granate */}
-      <header className="h-12 shrink-0 bg-white border-b border-slate-200 px-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <svg width="24" height="24" viewBox="0 0 38 38" fill="none" className="shrink-0">
-            <circle cx="19" cy="19" r="16.5" stroke="#18202A" strokeWidth="2.2" />
-            <path d="M2.5 19 C 8 27, 30 27, 35.5 19" stroke="#881337" strokeWidth="2.2" />
-            <circle cx="19" cy="9" r="2.4" fill="#B91C1C" />
-            <circle cx="14.5" cy="11.5" r="2.4" fill="#B91C1C" />
-          </svg>
-          <span className="font-display font-semibold text-sm text-slate-900 whitespace-nowrap">
-            Análisis Cinemático
-          </span>
-          {analisis && (
-            <span className="hidden xl:inline-block text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 truncate">
-              {analisis.contexto.nombre} · {analisis.contexto.buz}°/{String(analisis.contexto.dirbuz).padStart(3, '0')}° · N={analisis.contexto.n_datos}
-            </span>
-          )}
-        </div>
-
-        <nav className="flex items-center bg-slate-100 p-0.5 rounded-lg overflow-x-auto">
-          {VISTAS.map((v) => (
+      {/* 1. BARRA DE MENÚ SUPERIOR DE ESCRITORIO */}
+      <nav
+        ref={menuBarRef}
+        className="h-6 shrink-0 bg-slate-100 border-b border-slate-300 px-2 flex items-center justify-between text-[11px] text-slate-700 relative z-40"
+      >
+        <div className="flex items-center gap-0.5">
+          {/* Menú Archivo */}
+          <div className="relative">
             <button
-              key={v.id}
               type="button"
-              onClick={() => setVista(v.id)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                vista === v.id
-                  ? 'bg-[#881337] text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+              onClick={() => setActiveMenu(activeMenu === 'archivo' ? null : 'archivo')}
+              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
+                activeMenu === 'archivo' ? 'bg-slate-300' : ''
               }`}
             >
-              {v.label}
+              Archivo
             </button>
-          ))}
-        </nav>
+            {activeMenu === 'archivo' && (
+              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Subir archivo…</span>
+                </button>
+                <div className="h-px bg-slate-200 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExport('excel');
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Descargar en Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExport('png');
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-[#881337]" />
+                  <span>Descargar en PNG</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExport('zip');
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <Archive className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Descargar en ZIP</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExportCunaExcel();
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Descargar cuña en Excel</span>
+                </button>
+                <div className="h-px bg-slate-200 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleLogout();
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-rose-700 hover:text-white text-rose-700 flex items-center gap-2"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Cerrar sesión</span>
+                </button>
+              </div>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Menú Editar */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveMenu(activeMenu === 'editar' ? null : 'editar')}
+              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
+                activeMenu === 'editar' ? 'bg-slate-300' : ''
+              }`}
+            >
+              Editar
+            </button>
+            {activeMenu === 'editar' && (
+              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditor(true);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <Table2 className="w-3.5 h-3.5" />
+                  <span>Tabla de datos…</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPwd(true);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Cambiar contraseña…</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Menú Análisis */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveMenu(activeMenu === 'analisis' ? null : 'analisis')}
+              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
+                activeMenu === 'analisis' ? 'bg-slate-300' : ''
+              }`}
+            >
+              Análisis
+            </button>
+            {activeMenu === 'analisis' && (
+              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    runAnalysis();
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2 font-medium"
+                >
+                  <Play className="w-3.5 h-3.5 text-[#881337]" />
+                  <span>Recalcular (F5)</span>
+                </button>
+                <div className="h-px bg-slate-200 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUmbral(10);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
+                >
+                  <span>Umbral crítico: 10% (Dips)</span>
+                  {umbral === 10 && <span className="font-bold text-[#881337]">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUmbral(15);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
+                >
+                  <span>Umbral crítico: 15%</span>
+                  {umbral === 15 && <span className="font-bold text-[#881337]">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUmbral(5);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
+                >
+                  <span>Umbral crítico: 5%</span>
+                  {umbral === 5 && <span className="font-bold text-[#881337]">✓</span>}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Menú Ver */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveMenu(activeMenu === 'ver' ? null : 'ver')}
+              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
+                activeMenu === 'ver' ? 'bg-slate-300' : ''
+              }`}
+            >
+              Ver
+            </button>
+            {activeMenu === 'ver' && (
+              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSidebarCollapsed((c) => !c);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
+                >
+                  <span>Panel de opciones (Izquierda)</span>
+                  {!sidebarCollapsed && <span className="font-bold text-[#881337]">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInspectorCollapsed((c) => !c);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
+                >
+                  <span>Inspector (Derecha)</span>
+                  {!inspectorCollapsed && <span className="font-bold text-[#881337]">✓</span>}
+                </button>
+                <div className="h-px bg-slate-200 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomFull(false);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white"
+                >
+                  Ajustar gráfico
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomFull(true);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white"
+                >
+                  Ampliar gráfico
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Menú Herramientas (si es admin) */}
+          {user.rol_nombre === 'admin' && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveMenu(activeMenu === 'herramientas' ? null : 'herramientas')}
+                className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
+                  activeMenu === 'herramientas' ? 'bg-slate-300' : ''
+                }`}
+              >
+                Herramientas
+              </button>
+              {activeMenu === 'herramientas' && (
+                <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAdmin(true);
+                      setActiveMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center gap-2"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-[#881337]" />
+                    <span>Administración y logs…</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Menú Ayuda */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActiveMenu(activeMenu === 'ayuda' ? null : 'ayuda')}
+              className={`px-2 py-0.5 rounded-sm hover:bg-slate-200 font-medium ${
+                activeMenu === 'ayuda' ? 'bg-slate-300' : ''
+              }`}
+            >
+              Ayuda
+            </button>
+            {activeMenu === 'ayuda' && (
+              <div className="absolute left-0 top-full mt-0.5 bg-white border border-slate-300 rounded shadow-lg py-1 min-w-[200px] text-xs z-50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHelp(true);
+                    setActiveMenu(null);
+                  }}
+                  className="w-full text-left px-3 py-1 hover:bg-[#881337] hover:text-white flex items-center justify-between"
+                >
+                  <span>Guía y referencias Dips</span>
+                  <span className="text-[10px] text-slate-400 font-mono">F1</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Info usuario derecha del menú */}
+        <div className="flex items-center gap-2 font-mono text-[10.5px] text-slate-500">
+          <span>{user.usuario} ({user.rol_nombre})</span>
+        </div>
+      </nav>
+
+      {/* 2. BARRA DE HERRAMIENTAS RIBBON */}
+      <div className="h-9 shrink-0 bg-[#F1F3F5] border-b border-slate-300 px-3 flex items-center justify-between text-xs select-none">
+        {/* Acciones de herramientas */}
+        <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto">
+          <div className="flex items-center gap-2 mr-2 shrink-0">
+            <img src="/logo.png" alt="Cinemático" className="w-5 h-5 object-contain" />
+            <span className="font-bold text-xs text-slate-900 tracking-tight whitespace-nowrap">
+              ANÁLISIS CINEMÁTICO
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
+
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
+            title="Subir archivo"
+          >
+            <Upload className="w-3.5 h-3.5 text-slate-600" />
+            <span>{uploading ? 'Leyendo…' : 'Subir archivo'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowEditor(true)}
+            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
+            title="Ver tabla de discontinuidades"
+          >
+            <Table2 className="w-3.5 h-3.5 text-slate-600" />
+            <span>Tabla de datos ({rows.length})</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={running}
+            onClick={() => runAnalysis()}
+            className="px-3.5 py-1 bg-[#881337] hover:bg-[#6F0F2C] text-white rounded font-semibold flex items-center gap-1.5 shadow-sm transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
+            title="Recalcular análisis"
+          >
+            <Play className="w-3 h-3 fill-white" />
+            <span>{running ? 'Calculando…' : 'Calcular'}</span>
+          </button>
+
+          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
+
+          <button
+            type="button"
+            onClick={() => setZoomFull(false)}
+            className={`p-1 border rounded text-slate-700 shadow-xs shrink-0 ${
+              !zoomFull ? 'bg-slate-200/90 border-slate-400 font-semibold' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
+            }`}
+            title="Ajustar a ventana"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setZoomFull(true)}
+            className={`p-1 border rounded text-slate-700 shadow-xs shrink-0 ${
+              zoomFull ? 'bg-slate-200/90 border-slate-400 font-semibold' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
+            }`}
+            title="Ampliar gráfico"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+
+          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
+
+          {/* Exportaciones */}
           <button
             type="button"
             disabled={!analisis || exporting !== null}
             onClick={() => handleExport('excel')}
-            className="px-2 py-1 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-md text-slate-700 flex items-center gap-1 disabled:opacity-50"
-            title="Descargar libro Excel completo"
+            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
+            title="Descargar en Excel"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-            <span className="hidden sm:inline">{exporting === 'excel' ? '…' : 'Excel'}</span>
+            <span>{exporting === 'excel' ? '…' : 'Excel'}</span>
           </button>
+
           <button
             type="button"
             disabled={!analisis || exporting !== null}
             onClick={() => handleExport('png')}
-            className="px-2 py-1 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-md text-slate-700 flex items-center gap-1 disabled:opacity-50"
-            title={`Descargar PNG (${opciones.dpi_exportar} dpi)`}
+            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
+            title="Descargar en PNG"
           >
-            <ImageIcon className="w-3.5 h-3.5 text-[#881337]" />
-            <span className="hidden sm:inline">{exporting === 'png' ? '…' : 'PNG'}</span>
+            <ImageIcon className="w-3.5 h-3.5 text-slate-600" />
+            <span>{exporting === 'png' ? '…' : 'PNG'}</span>
           </button>
+
           <button
             type="button"
             disabled={!analisis || exporting !== null}
             onClick={() => handleExport('zip')}
-            className="px-2 py-1 text-xs font-medium border border-slate-200 hover:bg-slate-50 rounded-md text-slate-700 flex items-center gap-1 disabled:opacity-50"
-            title="Descargar ZIP completo"
+            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
+            title="Descargar en ZIP"
           >
             <Archive className="w-3.5 h-3.5 text-amber-700" />
-            <span className="hidden sm:inline">{exporting === 'zip' ? '…' : 'ZIP'}</span>
+            <span>{exporting === 'zip' ? '…' : 'ZIP'}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setShowHelp(true)}
-            className="p-1.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-600"
-            title="Ayuda y referencias APA"
+            disabled={!analisis}
+            onClick={handleExportCunaExcel}
+            className="px-2 py-1 border border-slate-300 hover:bg-white bg-slate-50/80 rounded text-slate-700 font-medium flex items-center gap-1 shadow-xs disabled:opacity-50 shrink-0"
+            title="Descargar cuña en Excel"
           >
-            <BookOpen className="w-3.5 h-3.5" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Cuña</span>
           </button>
 
+          <div className="h-4 w-px bg-slate-300 mx-0.5 shrink-0" />
+
+          {/* Paneles */}
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            className={`p-1.5 border rounded text-slate-700 shadow-xs shrink-0 ${
+              !sidebarCollapsed ? 'bg-slate-200/90 border-slate-400' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
+            }`}
+            title="Alternar panel de opciones"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setInspectorCollapsed((c) => !c)}
+            className={`p-1.5 border rounded text-slate-700 shadow-xs shrink-0 ${
+              !inspectorCollapsed ? 'bg-slate-200/90 border-slate-400' : 'bg-slate-50/80 border-slate-300 hover:bg-white'
+            }`}
+            title="Alternar inspector de mecanismos"
+          >
+            <Columns className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Botón Admin */}
           {user.rol_nombre === 'admin' && (
             <button
               type="button"
               onClick={() => setShowAdmin(true)}
-              className="px-2.5 py-1 text-xs font-semibold bg-[#881337] hover:bg-[#6F0F2C] text-white rounded-md flex items-center gap-1"
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-900 border border-slate-800 text-white rounded font-medium flex items-center gap-1 shadow-xs shrink-0"
             >
-              <Shield className="w-3.5 h-3.5" />
-              Admin / Logs
+              <Shield className="w-3.5 h-3.5 text-rose-300" />
+              <span>Admin</span>
             </button>
           )}
+        </div>
 
-          <div className="h-5 w-px bg-slate-200 mx-0.5" />
-
-          <span className="hidden md:inline text-xs font-medium text-slate-700 px-1">
-            {user.usuario}
-          </span>
+        {/* Botón Cerrar Sesión claramente visible "de una" */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
           <button
             type="button"
             onClick={() => setShowPwd(true)}
-            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600"
+            className="p-1 hover:bg-slate-200/70 text-slate-600 rounded transition-colors"
             title="Cambiar contraseña"
           >
             <KeyRound className="w-3.5 h-3.5" />
           </button>
+
           <button
             type="button"
             onClick={handleLogout}
-            className="p-1.5 rounded-md hover:bg-red-50 text-slate-600 hover:text-red-700"
+            className="px-2.5 py-1 text-xs font-medium border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-white rounded flex items-center gap-1.5 transition-colors shadow-xs"
             title="Cerrar sesión"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-3.5 h-3.5 text-slate-600 group-hover:text-rose-700" />
+            <span>Cerrar sesión</span>
           </button>
         </div>
-      </header>
+      </div>
 
-      <div className="flex-1 min-h-0 flex">
+      {/* 3. CUERPO PRINCIPAL */}
+      <div className="flex-1 min-h-0 flex bg-slate-100">
         <LeftSidebar
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
@@ -526,65 +957,57 @@ export default function App() {
           onChangeOpciones={setOpciones}
           onUploadFile={handleUploadFile}
           onLoadEjemplo={handleLoadEjemplo}
-          onOpenEditor={() => setShowEditor(true)}
-          onRunAnalysis={() => runAnalysis()}
-          running={running}
           uploading={uploading}
         />
 
+        {/* Viewport Central */}
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-white">
           {errorMsg && (
-            <div className="mx-3 mt-2 px-3 py-2 text-xs bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center justify-between shrink-0">
+            <div className="mx-3 mt-2 px-3 py-1.5 text-xs bg-red-50 border border-red-200 text-red-800 rounded flex items-center justify-between shrink-0 font-mono">
               <span>{errorMsg}</span>
-              <button type="button" onClick={() => setErrorMsg(null)} className="font-semibold ml-2">
+              <button
+                type="button"
+                onClick={() => setErrorMsg(null)}
+                className="font-bold ml-2 text-red-700"
+              >
                 ×
               </button>
             </div>
           )}
 
           {analisis && (
-            <div
-              className={`mx-3 mt-2.5 px-3 py-2 rounded-xl border flex items-center justify-between gap-3 shrink-0 ${
-                posibles.length > 0
-                  ? 'bg-rose-50/80 border-rose-200'
-                  : 'bg-slate-50 border-slate-200'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-7 bg-slate-50 border-b border-slate-200 px-3 flex items-center justify-between text-xs text-slate-700 shrink-0 select-none">
+              <div className="flex items-center gap-2 min-w-0">
                 {posibles.length > 0 ? (
-                  <AlertTriangle className="w-4 h-4 text-[#881337] shrink-0" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#881337] shrink-0" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4 text-slate-600 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 )}
-                <div className="text-xs truncate">
-                  <b className="text-slate-900">
+                <div className="truncate">
+                  <span className="font-semibold text-slate-800">
                     {posibles.length > 0
                       ? `${posibles.length} de ${veredictosActivos.length} mecanismos cinemáticamente posibles:`
-                      : 'Ningún mecanismo alcanza el porcentaje crítico'}
-                  </b>{' '}
-                  <span className="text-slate-600">
+                      : 'Ningún mecanismo excede el umbral crítico'}
+                  </span>{' '}
+                  <span className="text-slate-600 font-mono text-[11px]">
                     {posibles.length > 0
                       ? posibles.map((p) => p.nombre).join(', ')
                       : `(umbral actual ${umbral} %)`}
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setZoomFull((z) => !z)}
-                className="px-2 py-1 text-[11px] font-medium bg-white/80 hover:bg-white border border-slate-200 rounded-md text-slate-700 flex items-center gap-1 shrink-0"
-                title="Alternar tamaño completo / ajustado"
-              >
-                {zoomFull ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
-                {zoomFull ? 'Ajustar' : 'Ampliar'}
-              </button>
+              <span className="text-[11px] text-slate-500 font-mono shrink-0">
+                Umbral {umbral}%
+              </span>
             </div>
           )}
 
-          <div className="flex-1 min-h-0 relative flex items-center justify-center p-3 overflow-auto">
+          {/* Lienzo del Estereograma */}
+          <div className="flex-1 min-h-0 relative flex items-center justify-center p-3 overflow-auto bg-white">
             {(running || redrawing) && (
-              <div className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full bg-slate-900/80 text-white text-[11px]">
-                {running ? 'Calculando…' : 'Redibujando…'}
+              <div className="absolute top-3 right-3 z-20 px-2.5 py-1 rounded bg-slate-900/85 text-white text-xs font-mono shadow flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
               </div>
             )}
             {figuraSrc ? (
@@ -593,36 +1016,52 @@ export default function App() {
                 alt={`Estereograma ${vista}`}
                 className={
                   zoomFull
-                    ? 'max-w-none h-auto'
+                    ? 'max-w-none h-auto select-none'
                     : 'max-w-full max-h-full object-contain select-none'
                 }
               />
             ) : (
-              <div className="text-xs text-slate-400">
-                {running ? 'Generando estereograma inicial…' : 'Sin gráfico disponible.'}
+              <div className="text-xs text-slate-400 font-mono">
+                {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
               </div>
             )}
           </div>
 
-          <footer className="h-7 shrink-0 bg-slate-50 border-t border-slate-200 px-3 flex items-center justify-between text-[11px] text-slate-500">
-            <span className="truncate">
+          {/* 4. PESTAÑAS DE VISTAS INFERIORES */}
+          <div className="h-8 shrink-0 bg-slate-100 border-t border-slate-200 px-3 flex items-end gap-1 overflow-x-auto select-none">
+            {VISTAS.map((v) => {
+              const active = vista === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setVista(v.id)}
+                  className={`px-3 py-1.5 text-xs rounded-t border-t border-x transition-colors cursor-pointer ${
+                    active
+                      ? 'bg-white border-t-2 border-t-[#881337] border-slate-200 text-slate-900 font-semibold -mb-px z-10 shadow-sm'
+                      : 'bg-transparent border-transparent hover:bg-slate-200/70 text-slate-600 font-medium'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 5. BARRA DE ESTADO INFERIOR LIMPIA */}
+          <footer className="h-6 shrink-0 bg-slate-50 border-t border-slate-200 px-3 flex items-center justify-between text-[11px] text-slate-500 font-mono select-none">
+            <div className="truncate">
               {analisis
-                ? `${analisis.contexto.nombre} · talud ${analisis.contexto.buz}° / ${String(
-                    analisis.contexto.dirbuz,
-                  ).padStart(3, '0')}° · φ = ${analisis.contexto.phi}° · ${
-                    analisis.contexto.n_datos
-                  } discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · ${
-                    analisis.contexto.exclusion_resumen
-                  }`
-                : 'Listo'}
-            </span>
-            <span className="shrink-0 ml-2 font-mono text-[10.5px]">
-              {opciones.proyeccion === 'equiarea' ? 'Equal Area' : 'Equal Angle'} ·{' '}
-              {opciones.hemisferio === 'inferior' ? 'Lower' : 'Upper'}
-            </span>
+                ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${talud.buz}°/${String(talud.dirbuz).padStart(3, '0')}° · φ = ${parametros.phi}°`
+                : 'Sin datos'}
+            </div>
+            <div className="shrink-0 ml-3">
+              {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'}
+            </div>
           </footer>
         </main>
 
+        {/* Panel Derecho: Inspector de Mecanismos y Tablas */}
         <RightInspector
           data={analisis}
           vista={vista}
@@ -630,9 +1069,12 @@ export default function App() {
           onSelectVista={setVista}
           onExportTableCsv={handleExportTableCsv}
           onExportCunaExcel={handleExportCunaExcel}
+          collapsed={inspectorCollapsed}
+          onToggleCollapse={() => setInspectorCollapsed((c) => !c)}
         />
       </div>
 
+      {/* Modales */}
       {showEditor && (
         <DataEditorModal
           rows={rows}
@@ -642,7 +1084,7 @@ export default function App() {
             setRows(edited);
             setShowEditor(false);
             await runAnalysis(edited);
-            notify(`Tabla actualizada: ${edited.length} filas`);
+            notify(`Tabla actualizada: ${edited.length} discontinuidades`);
           }}
         />
       )}

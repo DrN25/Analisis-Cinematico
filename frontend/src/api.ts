@@ -1,5 +1,5 @@
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '');
-const TOKEN_KEY = 'gema_cinematico_token';
+const TOKEN_KEY = 'cinematico_auth_token';
 
 let onUnauthorized: (() => void) | null = null;
 
