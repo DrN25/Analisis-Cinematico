@@ -7,7 +7,7 @@ services:
       - ./backend/.env
     ports:
       - "8002:8002"
-    mem_limit: 768m
+    mem_limit: 1536m
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/api/health', timeout=5)"]
