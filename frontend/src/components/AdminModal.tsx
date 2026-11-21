@@ -208,13 +208,13 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-3 select-none">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-7xl h-[88vh] flex flex-col">
         {/* Cabecera */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-[#881337]" />
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-200">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Shield className="w-5 h-5 text-[#881337] shrink-0" />
             <h2 className="font-display font-semibold text-base text-slate-900">
               Panel de Administración
             </h2>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs ml-2">
+            <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs">
               <button
                 type="button"
                 onClick={() => setTab('usuarios')}
@@ -261,8 +261,8 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
 
         {/* Pestaña Usuarios */}
         {tab === 'usuarios' && (
-          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 p-5 overflow-hidden">
-            <div className="lg:col-span-8 flex flex-col min-h-0">
+          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 p-3 sm:p-5 overflow-y-auto lg:overflow-hidden">
+            <div className="lg:col-span-8 flex flex-col min-h-[260px] lg:min-h-0">
               {/* Barra superior de filtros de estado y búsqueda */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3 shrink-0">
                 <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs">

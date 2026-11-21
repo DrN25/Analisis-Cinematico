@@ -36,7 +36,7 @@ def tablas_intersecciones(res):
 def png_figura(fig, dpi=150):
     buf = io.BytesIO()
     try:
-        fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight", facecolor="white")
+        fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight", pad_inches=0.04, facecolor="white")
     finally:
         try:
             fig.clf()

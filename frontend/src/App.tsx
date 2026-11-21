@@ -9,6 +9,7 @@ import {
   KeyRound,
   LogOut,
   Shield,
+  Sliders,
   Upload,
 } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ import { DataEditorModal } from './components/DataEditorModal';
 import { HelpModal } from './components/HelpModal';
 import { LeftSidebar } from './components/LeftSidebar';
 import { LoginView } from './components/LoginView';
+import { ManualStructuresModal } from './components/ManualStructuresModal';
 import { NumberInput } from './components/NumberInput';
 import {
   AnalisisResponse,
@@ -48,14 +50,27 @@ const VISTAS: { id: VistaKey; label: string }[] = [
   { id: 'cuna', label: 'Rotura en cuña' },
   { id: 'flexural', label: 'Toppling flexural' },
   { id: 'directo', label: 'Toppling directo' },
-  { id: 'roseta', label: 'Roseta' },
 ];
+
+function getVisualOpcionesKey(op: OpcionesPlot): string {
+  const { dpi_exportar: _ignored, ...visual } = op;
+  return JSON.stringify(visual);
+}
+
+function cacheFigure(cache: Map<string, string>, key: string, dataUrl: string) {
+  if (cache.size >= 15) {
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  cache.set(key, dataUrl);
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [filename, setFilename] = useState('discontinuidades_ejemplo.csv');
   const [rows, setRows] = useState<DiscontinuidadRow[]>([]);
@@ -88,6 +103,7 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const [showEditor, setShowEditor] = useState(false);
+  const [showManualAdd, setShowManualAdd] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -99,8 +115,18 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const descargasRef = useRef<HTMLDivElement | null>(null);
   const masOpcionesRef = useRef<HTMLDivElement | null>(null);
-  const skipNextRedrawRef = useRef(false);
+  const figureCacheRef = useRef<Map<string, string>>(new Map());
+  const lastRunSnapshotRef = useRef<{
+    rows: DiscontinuidadRow[];
+    filtro: FiltroParams;
+    talud: TaludParams;
+    parametros: DipsParams;
+  } | null>(null);
+  const opcionesRef = useRef(opciones);
+  opcionesRef.current = opciones;
   const toastTimerRef = useRef<number | null>(null);
+
+  const plotVisualKey = getVisualOpcionesKey(opciones);
 
   const notify = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -153,6 +179,14 @@ export default function App() {
       const targetVista = customVista ?? vista;
       if (targetRows.length === 0) return null;
 
+      const snapshot = {
+        rows: targetRows,
+        filtro: targetFiltro,
+        talud,
+        parametros,
+      };
+      const usedVisualKey = getVisualOpcionesKey(opciones);
+
       setRunning(true);
       setErrorMsg(null);
       try {
@@ -168,10 +202,13 @@ export default function App() {
             opciones,
           }),
         });
-        skipNextRedrawRef.current = true;
+        const dataUrl = `data:image/png;base64,${res.figura_base64}`;
+        lastRunSnapshotRef.current = snapshot;
+        figureCacheRef.current.clear();
+        cacheFigure(figureCacheRef.current, `${res.analysis_id}|${targetVista}|${usedVisualKey}`, dataUrl);
         setAnalisis(res);
         setDescartadas(res.tablas.descartadas);
-        setFiguraSrc(`data:image/png;base64,${res.figura_base64}`);
+        setFiguraSrc(dataUrl);
         return res;
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : 'Error al ejecutar análisis.');
@@ -183,8 +220,50 @@ export default function App() {
     [rows, filtro, vista, talud, parametros, umbral, opciones],
   );
 
-  const runAnalysisRef = useRef(runAnalysis);
-  runAnalysisRef.current = runAnalysis;
+  const rehydrateFromSnapshot = useCallback(
+    async (targetVista: VistaKey): Promise<AnalisisResponse | null> => {
+      const snap = lastRunSnapshotRef.current;
+      if (!snap || snap.rows.length === 0) {
+        return runAnalysis(undefined, undefined, targetVista);
+      }
+
+      const currentOpciones = opcionesRef.current;
+      const usedVisualKey = getVisualOpcionesKey(currentOpciones);
+
+      setRunning(true);
+      setErrorMsg(null);
+      try {
+        const res = await apiJson<AnalisisResponse>('/api/analisis/ejecutar', {
+          method: 'POST',
+          body: JSON.stringify({
+            filas: snap.rows,
+            talud: snap.talud,
+            parametros: snap.parametros,
+            filtro: snap.filtro,
+            umbral,
+            vista: targetVista,
+            opciones: currentOpciones,
+          }),
+        });
+        const dataUrl = `data:image/png;base64,${res.figura_base64}`;
+        figureCacheRef.current.clear();
+        cacheFigure(figureCacheRef.current, `${res.analysis_id}|${targetVista}|${usedVisualKey}`, dataUrl);
+        setAnalisis(res);
+        setDescartadas(res.tablas.descartadas);
+        setFiguraSrc(dataUrl);
+        return res;
+      } catch (err) {
+        setErrorMsg(err instanceof Error ? err.message : 'Error al reconstruir el análisis.');
+        return null;
+      } finally {
+        setRunning(false);
+      }
+    },
+    [runAnalysis, umbral],
+  );
+
+  const rehydrateFromSnapshotRef = useRef(rehydrateFromSnapshot);
+  rehydrateFromSnapshotRef.current = rehydrateFromSnapshot;
 
   const initWorkspace = useCallback(async () => {
     setErrorMsg(null);
@@ -197,6 +276,9 @@ export default function App() {
       const initFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
       setFiltro(initFiltro);
 
+      const currentOpciones = opcionesRef.current;
+      const usedVisualKey = getVisualOpcionesKey(currentOpciones);
+
       const res = await apiJson<AnalisisResponse>('/api/analisis/ejecutar', {
         method: 'POST',
         body: JSON.stringify({
@@ -206,16 +288,24 @@ export default function App() {
           filtro: initFiltro,
           umbral,
           vista: 'general',
-          opciones,
+          opciones: currentOpciones,
         }),
       });
-      skipNextRedrawRef.current = true;
+      const dataUrl = `data:image/png;base64,${res.figura_base64}`;
+      lastRunSnapshotRef.current = {
+        rows: ej.rows,
+        filtro: initFiltro,
+        talud,
+        parametros,
+      };
+      figureCacheRef.current.clear();
+      cacheFigure(figureCacheRef.current, `${res.analysis_id}|general|${usedVisualKey}`, dataUrl);
       setAnalisis(res);
-      setFiguraSrc(`data:image/png;base64,${res.figura_base64}`);
+      setFiguraSrc(dataUrl);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'No se pudo cargar el ejemplo inicial.');
     }
-  }, [talud, parametros, umbral, opciones]);
+  }, [talud, parametros, umbral]);
 
   useEffect(() => {
     const tok = getToken();
@@ -233,12 +323,20 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Solo redibuja el estereograma al cambiar de vista o de opciones de dibujo (sin recalcular geometría/parámetros)
   useEffect(() => {
     if (!analisis?.analysis_id) return;
-    if (skipNextRedrawRef.current) {
-      skipNextRedrawRef.current = false;
+
+    const cacheKey = `${analisis.analysis_id}|${vista}|${plotVisualKey}`;
+    const cached = figureCacheRef.current.get(cacheKey);
+    if (cached) {
+      setFiguraSrc(cached);
+      setRedrawing(false);
       return;
     }
+
+    const controller = new AbortController();
+    let cancelled = false;
 
     const timer = window.setTimeout(async () => {
       setRedrawing(true);
@@ -246,30 +344,43 @@ export default function App() {
       try {
         const { blob } = await apiBlob('/api/analisis/figura', {
           method: 'POST',
+          signal: controller.signal,
           body: JSON.stringify({
             analysis_id: analisis.analysis_id,
             vista,
-            opciones,
+            opciones: opcionesRef.current,
           }),
         });
         const reader = new FileReader();
         reader.onloadend = () => {
-          if (typeof reader.result === 'string') setFiguraSrc(reader.result);
+          if (!cancelled && typeof reader.result === 'string') {
+            cacheFigure(figureCacheRef.current, cacheKey, reader.result);
+            setFiguraSrc(reader.result);
+          }
         };
         reader.readAsDataURL(blob);
       } catch (err) {
+        if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) {
+          return;
+        }
         if (err instanceof ApiError && err.code === 'CACHE_MISS') {
-          await runAnalysisRef.current(undefined, undefined, vista);
+          await rehydrateFromSnapshotRef.current(vista);
         } else {
           setErrorMsg(err instanceof Error ? err.message : 'No se pudo redibujar el estereograma.');
         }
       } finally {
-        setRedrawing(false);
+        if (!cancelled) {
+          setRedrawing(false);
+        }
       }
-    }, 200);
+    }, 280);
 
-    return () => window.clearTimeout(timer);
-  }, [vista, opciones, analisis?.analysis_id]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [vista, plotVisualKey, analisis?.analysis_id]);
 
   const handleUploadFile = async (file: File) => {
     const MAX_FILE_SIZE_BYTES = 80 * 1024; // 80 KB
@@ -314,7 +425,7 @@ export default function App() {
       await action(analisis.analysis_id);
     } catch (err) {
       if (err instanceof ApiError && err.code === 'CACHE_MISS') {
-        const refreshed = await runAnalysis();
+        const refreshed = await rehydrateFromSnapshot(vista);
         if (refreshed) {
           await action(refreshed.analysis_id);
         }
@@ -338,8 +449,8 @@ export default function App() {
           tipo === 'excel'
             ? 'analisis_cinematico.xlsx'
             : tipo === 'png'
-            ? `estereograma_${vista}.png`
-            : 'resultados_cinematico.zip';
+              ? `estereograma_${vista}.png`
+              : 'resultados_cinematico.zip';
         triggerDownload(blob, dlName || fallback);
       });
     } finally {
@@ -350,9 +461,12 @@ export default function App() {
   const handleClearData = () => {
     setRows([]);
     setDescartadas([]);
+    setTiposConteo({});
     setFilename('Sin archivo');
     setAnalisis(null);
     setFiguraSrc(null);
+    figureCacheRef.current.clear();
+    lastRunSnapshotRef.current = null;
     setErrorMsg(null);
     setFiltro({ tipos: null, persistencia_min: 0 });
     notify('Datos y resultados limpiados correctamente.');
@@ -368,6 +482,8 @@ export default function App() {
     setUser(null);
     setAnalisis(null);
     setFiguraSrc(null);
+    figureCacheRef.current.clear();
+    lastRunSnapshotRef.current = null;
   };
 
   if (authChecking) {
@@ -424,7 +540,7 @@ export default function App() {
       : '';
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-slate-100 text-slate-800 font-sans select-none">
+    <div className="min-h-[100dvh] lg:h-screen lg:overflow-hidden flex flex-col bg-slate-100 text-slate-800 font-sans select-none">
       <input
         ref={fileInputRef}
         type="file"
@@ -439,13 +555,13 @@ export default function App() {
 
       {/* Toast de notificación */}
       {toastMsg && (
-        <div className="fixed top-14 right-4 z-50 bg-slate-900 text-white text-xs px-3.5 py-2 rounded shadow-lg border border-slate-700 flex items-center gap-2">
+        <div className="fixed top-14 right-3 left-3 sm:left-auto sm:right-4 z-50 bg-slate-900 text-white text-xs px-3.5 py-2 rounded shadow-lg border border-slate-700 flex items-center gap-2">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>{toastMsg}</span>
+          <span className="flex-1 min-w-0">{toastMsg}</span>
           <button
             type="button"
             onClick={() => setToastMsg(null)}
-            className="text-slate-400 hover:text-white ml-1 font-bold"
+            className="text-slate-400 hover:text-white ml-1 font-bold shrink-0"
           >
             ×
           </button>
@@ -453,46 +569,45 @@ export default function App() {
       )}
 
       {/* 1. BARRA SUPERIOR: Pestañas [ Análisis ] [ Referencias ] y Sesión de usuario */}
-      <nav className="h-8 shrink-0 bg-slate-100 border-b border-slate-300 px-3 flex items-center justify-between text-xs select-none">
+      <nav className="min-h-8 shrink-0 bg-slate-100 border-b border-slate-300 px-2 sm:px-3 py-1 flex items-center justify-between gap-2 text-xs select-none">
         {/* Pestañas principales */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('analisis')}
-            className={`px-3 py-1 rounded text-xs transition-colors cursor-pointer ${
-              activeTab === 'analisis'
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
-            }`}
+            className={`px-2.5 sm:px-3 py-1 rounded text-xs transition-colors cursor-pointer ${activeTab === 'analisis'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
+              }`}
           >
             Análisis
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('referencias')}
-            className={`px-3 py-1 rounded text-xs transition-colors cursor-pointer ${
-              activeTab === 'referencias'
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
-            }`}
+            className={`px-2.5 sm:px-3 py-1 rounded text-xs transition-colors cursor-pointer ${activeTab === 'referencias'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
+              }`}
           >
             Referencias
           </button>
         </div>
 
         {/* Info usuario y sesión derecha */}
-        <div className="flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] text-slate-700 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="font-semibold">{user.usuario}</span>
-            <span className="text-slate-400">({user.rol_nombre})</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[11px] text-slate-700 shadow-2xs max-w-[120px] sm:max-w-none">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+            <span className="font-semibold truncate">{user.usuario}</span>
+            <span className="text-slate-400 hidden md:inline shrink-0">({user.rol_nombre})</span>
           </div>
 
           <button
             type="button"
             onClick={() => setShowPwd(true)}
-            className="px-2 py-0.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+            className="px-2 py-0.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer shrink-0"
             title="Cambiar contraseña"
+            aria-label="Cambiar contraseña"
           >
             <KeyRound className="w-3 h-3 text-slate-500" />
             <span className="hidden sm:inline">Contraseña</span>
@@ -502,30 +617,43 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowAdmin(true)}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-900 border border-slate-800 text-white rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-900 border border-slate-800 text-white rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer shrink-0"
               title="Panel de Administración"
+              aria-label="Panel de Administración"
             >
               <Shield className="w-3 h-3 text-rose-300" />
-              <span>Admin</span>
+              <span className="hidden sm:inline">Admin</span>
             </button>
           )}
 
           <button
             type="button"
             onClick={handleLogout}
-            className="px-2.5 py-0.5 border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-white rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+            className="px-2 sm:px-2.5 py-0.5 border border-slate-300 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-700 bg-white rounded text-[11px] font-medium flex items-center gap-1 transition-colors shadow-2xs cursor-pointer shrink-0"
             title="Cerrar sesión"
+            aria-label="Cerrar sesión"
           >
             <LogOut className="w-3 h-3 text-slate-500" />
-            <span>Cerrar sesión</span>
+            <span className="hidden sm:inline">Cerrar sesión</span>
           </button>
         </div>
       </nav>
 
       {/* 2. ENCABEZADO DE LA APLICACIÓN */}
-      <header className="h-12 shrink-0 bg-white border-b border-slate-200 px-4 flex items-center justify-between select-none">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full border border-slate-300 bg-slate-50 flex items-center justify-center p-0.5 shadow-2xs shrink-0">
+      <header className="min-h-12 shrink-0 bg-white border-b border-slate-200 px-3 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 select-none">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {activeTab === 'analisis' && (
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="lg:hidden px-2.5 py-1.5 border border-[#881337]/30 bg-rose-50/70 hover:bg-rose-100/70 text-[#881337] rounded text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors"
+              aria-label="Abrir opciones y parámetros de análisis"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Parámetros</span>
+            </button>
+          )}
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-300 bg-slate-50 hidden sm:flex items-center justify-center p-0.5 shadow-2xs shrink-0">
             <svg width="32" height="32" viewBox="0 0 38 38" aria-hidden="true" fill="none">
               <circle cx="19" cy="19" r="17" stroke="#18202A" strokeWidth="2" />
               <path d="M2.5 19 C 8 27, 30 27, 35.5 19" stroke="#1F4E9C" strokeWidth="2" />
@@ -534,18 +662,18 @@ export default function App() {
               <circle cx="25" cy="27" r="1.8" fill="#9AA5B1" />
             </svg>
           </div>
-          <div>
-            <h1 className="text-base font-bold text-slate-900 leading-tight">
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
               Análisis cinemático de taludes
             </h1>
-            <p className="text-[11px] text-slate-500 leading-tight">
+            <p className="text-[11px] text-slate-500 leading-tight hidden sm:block truncate">
               Rotura planar · cuña · toppling flexural · toppling directo
             </p>
           </div>
         </div>
 
         {/* Botones de acción derecha con popovers */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
           {/* Estereograma · más opciones */}
           <div className="relative" ref={masOpcionesRef}>
             <button
@@ -554,14 +682,15 @@ export default function App() {
                 setShowMasOpciones((v) => !v);
                 setShowDescargas(false);
               }}
-              className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
             >
-              <span>Estereograma · más opciones</span>
+              <span className="md:hidden">Más opciones</span>
+              <span className="hidden md:inline">Estereograma · más opciones</span>
               {showMasOpciones ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
             </button>
 
             {showMasOpciones && (
-              <div className="absolute right-0 top-full mt-1 w-80 max-h-[82vh] overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-xl p-3.5 z-50 text-xs text-slate-700 space-y-3">
+              <div className="fixed inset-x-3 top-[116px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-1 sm:w-80 max-h-[78vh] overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-xl p-3.5 z-50 text-xs text-slate-700 space-y-3">
                 <div className="font-semibold text-slate-800 pb-1.5 border-b border-slate-100 flex items-center justify-between">
                   <span>Más opciones del estereograma</span>
                   <button
@@ -867,14 +996,15 @@ export default function App() {
                 setShowDescargas((v) => !v);
                 setShowMasOpciones(false);
               }}
-              className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
             >
-              <span>Descargar resultados</span>
+              <span className="md:hidden">Descargar</span>
+              <span className="hidden md:inline">Descargar resultados</span>
               {showDescargas ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
             </button>
 
             {showDescargas && (
-              <div className="absolute right-0 top-full mt-1 w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2">
+              <div className="fixed inset-x-3 top-[116px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-1 sm:w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2">
                 <p className="text-[11px] text-slate-500 italic pb-1 border-b border-slate-100 leading-snug">
                   Los archivos se generan en tu equipo; los datos no se suben a ningún servidor.
                 </p>
@@ -977,11 +1107,13 @@ export default function App() {
           </div>
         </div>
       ) : (
-        /* 4. CUERPO PRINCIPAL DE ANÁLISIS: 3 COLUMNAS */
-        <div className="flex-1 min-h-0 flex bg-slate-100 overflow-hidden">
+        /* 4. CUERPO PRINCIPAL DE ANÁLISIS */
+        <div className="flex-1 min-h-0 flex relative bg-slate-100 lg:overflow-hidden">
           <LeftSidebar
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+            mobileOpen={mobileSidebarOpen}
+            onCloseMobile={() => setMobileSidebarOpen(false)}
             filename={filename}
             totalRows={rows.length}
             descartadasCount={descartadas.length}
@@ -1000,12 +1132,13 @@ export default function App() {
             onClearData={handleClearData}
             onRunAnalysis={() => runAnalysis()}
             onOpenEditor={() => setShowEditor(true)}
+            onOpenManualAdd={() => setShowManualAdd(true)}
             running={running}
             uploading={uploading}
           />
 
           {/* Viewport Central */}
-          <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-white overflow-hidden">
+          <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-white lg:overflow-hidden">
             {errorMsg && (
               <div className="mx-3 mt-2 px-3 py-1.5 text-xs bg-red-50 border border-red-200 text-red-800 rounded flex items-center justify-between shrink-0 font-mono">
                 <span>{errorMsg}</span>
@@ -1020,14 +1153,14 @@ export default function App() {
             )}
 
             {analisis ? (
-              <div className="flex-1 min-h-0 overflow-y-auto p-3 lg:p-4">
+              <div className="flex-1 min-h-0 flex flex-col overflow-y-auto lg:overflow-hidden p-2.5 sm:p-3 lg:p-3.5">
                 {/* 1. Encabezado del Resumen */}
-                <div className="mb-2">
+                <div className="shrink-0 mb-2">
                   <h3 className="text-base font-bold text-[#18202A] tracking-tight mb-0.5 font-sans leading-tight">
                     Resumen del análisis cinemático
                   </h3>
                   <div className="ac-contexto">
-                    Talud {analisis.contexto.buz}° / {String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = {parametros.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · {analisis.contexto.filtro ? analisis.contexto.filtro.split(' · N =')[0] : 'Sin filtro'}
+                    Talud {analisis.contexto.buz}° / {String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = {analisis.contexto.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · {analisis.contexto.filtro ? analisis.contexto.filtro.split(' · N =')[0] : 'Sin filtro'}
                   </div>
 
                   {/* Veredicto HTML */}
@@ -1044,7 +1177,7 @@ export default function App() {
                         <path d="M8 12.5l2.7 2.7L16 9.8" />
                       </svg>
                     )}
-                    <div>
+                    <div className="min-w-0">
                       <b>{veredictoTitulo}</b>
                       <br />
                       <span>{veredictoTexto}</span>
@@ -1058,10 +1191,10 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 2. Cuerpo: col_tarjetas (izquierda) y col_figura (derecha) */}
-                <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr] gap-4 items-start pb-2">
-                  {/* Columna Tarjetas Apiladas (col_tarjetas) */}
-                  <div className="space-y-1.5 shrink-0">
+                {/* 2. Cuerpo: tarjetas (izquierda) + estereograma+notas (derecha) */}
+                <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2.5 lg:gap-3 min-w-0">
+                  {/* Columna Tarjetas Apiladas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-2 lg:gap-1.5 shrink-0 w-full lg:w-[215px] xl:w-[220px] 2xl:w-[235px] p-1 lg:overflow-y-auto">
                     {veredictosActivos.map((v) => {
                       const active = vista === v.clave;
                       const si = v.posible;
@@ -1077,17 +1210,39 @@ export default function App() {
                         if (oblicuo.posible && !si) {
                           claseTar = 'ac-tarjeta-adv';
                         }
+                        const c2Barra = Math.min(100, (oblicuo.porcentaje / 50) * 100);
+                        const c2Relleno = oblicuo.posible ? '#D97706' : '#8FB0DA';
                         extra = (
-                          <>
-                            <div className="ac-sub">
-                              Toppling oblicuo (C2): <b>{oblicuo.porcentaje.toFixed(1)} %</b> · {oblicuo.detalles[0]}
+                          <div className={`ac-c2-box ${oblicuo.posible ? 'ac-c2-box-adv' : ''}`}>
+                            <div className="ac-cab">
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <span className="ac-tag ac-tag-c2">C2</span>
+                                <span className="text-[11.5px] font-semibold text-[#18202A] truncate">
+                                  Toppling oblicuo
+                                </span>
+                              </span>
+                              <span className={`ac-insignia ${oblicuo.posible ? 'ac-insignia-adv' : 'ac-insignia-no'}`}>
+                                {oblicuo.posible ? 'SÍ' : 'NO'}
+                              </span>
+                            </div>
+                            <div className="ac-pct">
+                              <span className="ac-c2-num tabular-nums">{oblicuo.porcentaje.toFixed(1)}</span>
+                              <span className="ac-unid">% crítico</span>
+                            </div>
+                            <div className="ac-n">{oblicuo.detalles[0]}</div>
+                            <div className="ac-barra">
+                              <div
+                                className="ac-relleno"
+                                style={{ width: `${c2Barra.toFixed(1)}%`, background: c2Relleno }}
+                              />
+                              <div className="ac-umbral" style={{ left: `${marca.toFixed(1)}%` }} />
                             </div>
                             {oblicuo.posible && (
                               <div className="ac-advertencia">
-                                ⚠ Advertencia: C2 mayor a {umbral} %
+                                ⚠ C2 mayor a {umbral} %
                               </div>
                             )}
-                          </>
+                          </div>
                         );
                       }
 
@@ -1095,16 +1250,18 @@ export default function App() {
                         <div
                           key={v.clave}
                           onClick={() => setVista(v.clave as VistaKey)}
-                          className={`ac-tarjeta ${claseTar} ${
-                            active ? 'ring-2 ring-[#B93815]/60 shadow-md' : 'hover:shadow-xs'
-                          }`}
+                          className={`ac-tarjeta ${claseTar} ${active ? 'ring-2 ring-[#B93815]/60 shadow-md' : 'hover:shadow-xs'
+                            }`}
                         >
                           <div className="ac-cab">
-                            <span className="ac-nombre">{v.nombre}</span>
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              {v.clave === 'directo' && <span className="ac-tag ac-tag-c1">C1</span>}
+                              <span className="ac-nombre truncate">{v.nombre}</span>
+                            </span>
                             <span className={`ac-insignia ${claseIns}`}>{insignia}</span>
                           </div>
                           <div className="ac-pct">
-                            <span className="ac-num">{v.porcentaje.toFixed(1)}</span>
+                            <span className="ac-num tabular-nums">{v.porcentaje.toFixed(1)}</span>
                             <span className="ac-unid">% crítico</span>
                           </div>
                           <div className="ac-n">{v.detalles[0]}</div>
@@ -1121,10 +1278,10 @@ export default function App() {
                     })}
                   </div>
 
-                  {/* Columna Estereograma y Notas (col_figura) */}
-                  <div className="flex flex-col min-w-0">
+                  {/* Columna Estereograma + Notas (a la derecha) */}
+                  <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
                     {/* Selector de vistas */}
-                    <div className="flex items-center justify-start gap-1 p-0.5 bg-slate-100 rounded-lg border border-slate-200 mb-2 overflow-x-auto select-none">
+                    <div className="flex flex-wrap md:flex-nowrap items-center justify-start gap-1 md:gap-0.5 xl:gap-1 p-0.5 bg-slate-100 rounded-lg border border-slate-200 max-w-full select-none shrink-0">
                       {VISTAS.map((v) => {
                         const active = vista === v.id;
                         return (
@@ -1132,11 +1289,10 @@ export default function App() {
                             key={v.id}
                             type="button"
                             onClick={() => setVista(v.id)}
-                            className={`px-2.5 py-1 text-[11px] rounded transition-all font-medium cursor-pointer whitespace-nowrap ${
-                              active
-                                ? 'bg-white text-slate-900 font-bold shadow-xs border border-slate-200'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                            }`}
+                            className={`px-2 xl:px-2.5 py-1 text-[11px] rounded transition-all font-medium cursor-pointer whitespace-nowrap ${active
+                              ? 'bg-white text-slate-900 font-bold shadow-xs border border-slate-200'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                              }`}
                           >
                             {v.label}
                           </button>
@@ -1144,38 +1300,41 @@ export default function App() {
                       })}
                     </div>
 
-                    {/* Contenedor del Estereograma */}
-                    <div className="relative flex items-center justify-center p-2 bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden max-h-[46vh] lg:max-h-[44vh] xl:max-h-[48vh]">
-                      {(running || redrawing) && (
-                        <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-900/85 text-white text-[11px] font-mono shadow flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                          <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
-                        </div>
-                      )}
-                      {figuraSrc ? (
-                        <img
-                          src={figuraSrc}
-                          alt={`Estereograma ${vista}`}
-                          className="max-w-full max-h-[44vh] lg:max-h-[42vh] xl:max-h-[46vh] h-auto object-contain select-none"
-                        />
-                      ) : (
-                        <div className="text-xs text-slate-400 font-mono py-12">
-                          {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
-                        </div>
-                      )}
-                    </div>
+                    {/* Estereograma + Notas lado a lado */}
+                    <div className="flex-1 min-h-0 flex flex-col md:flex-row lg:flex-col xl:flex-row gap-2.5 min-w-0">
+                      {/* Contenedor del Estereograma */}
+                      <div className="relative flex-1 min-w-0 min-h-[260px] sm:min-h-[340px] lg:min-h-0 flex items-center justify-center p-1.5 bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
+                        {(running || redrawing) && (
+                          <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-900/85 text-white text-[11px] font-mono shadow flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                            <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
+                          </div>
+                        )}
+                        {figuraSrc ? (
+                          <img
+                            src={figuraSrc}
+                            alt={`Estereograma ${vista}`}
+                            className="w-full h-full max-h-[65vh] lg:max-h-full object-contain select-none"
+                          />
+                        ) : (
+                          <div className="text-xs text-slate-400 font-mono py-12">
+                            {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Notas de los resultados (debajo del estereograma a lo ancho) */}
-                    <div className="ac-notas">
-                      <div className="ac-notas-tit">Notas de los resultados</div>
-                      <ol>
-                        <li>
-                          El porcentaje crítico de discontinuidades corresponde a la fracción de polos o intersecciones que están dentro de la zona crítica. No corresponde a un factor de seguridad ni a una probabilidad de falla del mecanismo de rotura.
-                        </li>
-                        <li>
-                          En rotura planar y en cuña no se considera un plano igual al talud de análisis, debido a que no puede producir rotura planar ni formar cuñas críticas, porque no aflora y sus intersecciones generan bloques de volumen cero.
-                        </li>
-                      </ol>
+                      {/* Notas de los resultados (rectángulo a la derecha) */}
+                      <aside className="ac-notas shrink-0 md:w-[205px] lg:w-full xl:w-[200px] 2xl:w-[240px] md:self-stretch lg:self-auto xl:self-stretch md:overflow-y-auto lg:overflow-y-visible xl:overflow-y-auto flex flex-col">
+                        <div className="ac-notas-tit">Notas de los resultados</div>
+                        <ol>
+                          <li>
+                            El porcentaje crítico de discontinuidades corresponde a la fracción de polos o intersecciones que están dentro de la zona crítica. No corresponde a un factor de seguridad ni a una probabilidad de falla del mecanismo de rotura.
+                          </li>
+                          <li>
+                            En rotura planar y en cuña no se considera un plano igual al talud de análisis, debido a que no puede producir rotura planar ni formar cuñas críticas, porque no aflora y sus intersecciones generan bloques de volumen cero.
+                          </li>
+                        </ol>
+                      </aside>
                     </div>
                   </div>
                 </div>
@@ -1195,13 +1354,13 @@ export default function App() {
             )}
 
             {/* Barra de estado inferior */}
-            <footer className="h-6 shrink-0 bg-slate-50 border-t border-slate-200 px-4 flex items-center justify-between text-[11px] text-slate-500 font-mono select-none">
-              <div className="truncate">
+            <footer className="min-h-6 py-1 px-3 sm:px-4 shrink-0 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[11px] text-slate-500 font-mono select-none">
+              <div className="truncate max-w-full">
                 {analisis
-                  ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${talud.buz}°/${String(talud.dirbuz).padStart(3, '0')}° · φ = ${parametros.phi}°`
+                  ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${analisis.contexto.buz}°/${String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = ${analisis.contexto.phi}°`
                   : 'Sin datos'}
               </div>
-              <div className="shrink-0 ml-3">
+              <div className="shrink-0">
                 {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'}
               </div>
             </footer>
@@ -1210,6 +1369,30 @@ export default function App() {
       )}
 
       {/* Modales */}
+      {showManualAdd && (
+        <ManualStructuresModal
+          onClose={() => setShowManualAdd(false)}
+          onSaveStructures={(manualRows) => {
+            setRows(manualRows);
+            setDescartadas([]);
+            setFilename('Estructuras manuales');
+            const conteo: Record<string, number> = {};
+            for (const r of manualRows) {
+              const t = (r.Tipo || 'Sin tipo').toString().trim() || 'Sin tipo';
+              conteo[t] = (conteo[t] || 0) + 1;
+            }
+            setTiposConteo(conteo);
+            setFiltro({ tipos: null, persistencia_min: 0 });
+            setAnalisis(null);
+            setFiguraSrc(null);
+            figureCacheRef.current.clear();
+            lastRunSnapshotRef.current = null;
+            setShowManualAdd(false);
+            notify(`${manualRows.length} estructuras registradas. Pulsa «Ejecutar análisis» para calcular.`);
+          }}
+        />
+      )}
+
       {showEditor && (
         <DataEditorModal
           rows={rows}
@@ -1217,8 +1400,19 @@ export default function App() {
           onClose={() => setShowEditor(false)}
           onApplyAndRun={async (edited) => {
             setRows(edited);
+            if (!filename || filename === 'Sin archivo') {
+              setFilename('Estructuras manuales');
+            }
+            const conteo: Record<string, number> = {};
+            for (const r of edited) {
+              const t = (r.Tipo || 'Sin tipo').toString().trim() || 'Sin tipo';
+              conteo[t] = (conteo[t] || 0) + 1;
+            }
+            setTiposConteo(conteo);
+            const resetFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
+            setFiltro(resetFiltro);
             setShowEditor(false);
-            await runAnalysis(edited);
+            await runAnalysis(edited, resetFiltro);
             notify(`Tabla actualizada: ${edited.length} discontinuidades`);
           }}
         />

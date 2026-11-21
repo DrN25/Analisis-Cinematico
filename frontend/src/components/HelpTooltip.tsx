@@ -12,6 +12,8 @@ export const HelpTooltip: React.FC<HelpTooltipProps> = ({
   className = '',
 }) => {
   const [open, setOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const openedByHoverRef = useRef(false);
   const [coords, setCoords] = useState<{
     top: number;
     left: number;
@@ -62,18 +64,31 @@ export const HelpTooltip: React.FC<HelpTooltipProps> = ({
 
   const handleMouseEnter = () => {
     calculatePosition();
+    openedByHoverRef.current = true;
     setOpen(true);
   };
 
   const handleMouseLeave = () => {
-    setOpen(false);
+    openedByHoverRef.current = false;
+    if (!pinned) {
+      setOpen(false);
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     calculatePosition();
-    setOpen((prev) => !prev);
+    if (!pinned && openedByHoverRef.current) {
+      openedByHoverRef.current = false;
+      setPinned(true);
+      setOpen(true);
+      return;
+    }
+    const next = !open;
+    setPinned(next);
+    setOpen(next);
+    openedByHoverRef.current = false;
   };
 
   useEffect(() => {
@@ -81,6 +96,8 @@ export const HelpTooltip: React.FC<HelpTooltipProps> = ({
 
     const handleScrollOrResize = () => {
       setOpen(false);
+      setPinned(false);
+      openedByHoverRef.current = false;
     };
 
     const handleClickOutside = (e: MouseEvent) => {
@@ -91,11 +108,17 @@ export const HelpTooltip: React.FC<HelpTooltipProps> = ({
         !tooltipRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
+        setPinned(false);
+        openedByHoverRef.current = false;
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setPinned(false);
+        openedByHoverRef.current = false;
+      }
     };
 
     window.addEventListener('scroll', handleScrollOrResize, true);

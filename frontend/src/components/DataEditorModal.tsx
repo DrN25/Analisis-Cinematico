@@ -9,6 +9,8 @@ interface Props {
   onApplyAndRun: (rows: DiscontinuidadRow[]) => void;
 }
 
+const MAX_ROWS = 50;
+
 export const DataEditorModal: React.FC<Props> = ({
   rows,
   descartadas,
@@ -16,7 +18,9 @@ export const DataEditorModal: React.FC<Props> = ({
   onApplyAndRun,
 }) => {
   const [draft, setDraft] = useState<DiscontinuidadRow[]>(() =>
-    rows.map((r) => ({ ...r })),
+    rows.length > 0
+      ? rows.slice(0, MAX_ROWS).map((r) => ({ ...r }))
+      : [{ ID: 'D001', Buz: 45, DirBuz: 180, Tipo: 'Diaclasa', Persistencia: '' }],
   );
   const [tab, setTab] = useState<'validas' | 'descartadas'>('validas');
 
@@ -27,16 +31,19 @@ export const DataEditorModal: React.FC<Props> = ({
   };
 
   const addRow = () => {
-    setDraft((prev) => [
-      ...prev,
-      {
-        ID: `D${String(prev.length + 1).padStart(3, '0')}`,
-        Buz: 45,
-        DirBuz: 180,
-        Tipo: 'Diaclasa',
-        Persistencia: '',
-      },
-    ]);
+    setDraft((prev) => {
+      if (prev.length >= MAX_ROWS) return prev;
+      return [
+        ...prev,
+        {
+          ID: `D${String(prev.length + 1).padStart(3, '0')}`,
+          Buz: 45,
+          DirBuz: 180,
+          Tipo: 'Diaclasa',
+          Persistencia: '',
+        },
+      ];
+    });
   };
 
   const removeRow = (idx: number) => {
@@ -46,8 +53,8 @@ export const DataEditorModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-5xl max-h-[86vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3.5 border-b border-slate-200">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h2 className="font-display font-semibold text-base text-slate-900">
               Editor de discontinuidades
             </h2>
@@ -59,7 +66,7 @@ export const DataEditorModal: React.FC<Props> = ({
                   tab === 'validas' ? 'bg-white text-[#881337] shadow-sm' : 'text-slate-600'
                 }`}
               >
-                Tabla editable ({draft.length})
+                Tabla editable ({draft.length}/{MAX_ROWS})
               </button>
               <button
                 type="button"
@@ -187,16 +194,24 @@ export const DataEditorModal: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-slate-50">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-t border-slate-200 bg-slate-50">
           {tab === 'validas' ? (
-            <button
-              type="button"
-              onClick={addRow}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 bg-white hover:bg-slate-50 rounded-lg text-slate-700"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Añadir fila
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={draft.length >= MAX_ROWS}
+                onClick={addRow}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-slate-700 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Añadir fila ({draft.length}/{MAX_ROWS})
+              </button>
+              {draft.length >= MAX_ROWS && (
+                <span className="text-[11px] font-medium text-amber-700">
+                  Máximo {MAX_ROWS} filas permitidas
+                </span>
+              )}
+            </div>
           ) : (
             <div />
           )}
@@ -204,15 +219,15 @@ export const DataEditorModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200/60 rounded-lg"
+              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200/60 rounded-lg cursor-pointer"
             >
               Cerrar
             </button>
             <button
               type="button"
-              disabled={draft.length === 0}
+              disabled={draft.length === 0 || draft.length > MAX_ROWS}
               onClick={() => onApplyAndRun(draft)}
-              className="px-4 py-1.5 text-xs font-semibold bg-[#881337] hover:bg-[#6F0F2C] disabled:opacity-50 text-white rounded-lg"
+              className="px-4 py-1.5 text-xs font-semibold bg-[#881337] hover:bg-[#6F0F2C] disabled:opacity-50 text-white rounded-lg cursor-pointer"
             >
               Aplicar y ejecutar análisis
             </button>

@@ -61,6 +61,7 @@ from app.deps import get_current_user  # noqa: E402
 router = APIRouter()
 
 MAX_UPLOAD_BYTES = 80 * 1024  # Límite estricto de 80 KB por archivo
+MAX_FILAS_ESTRUCTURAS = 50    # Límite máximo de 50 estructuras/filas por carga o tabla
 CACHE_MAX_ITEMS = 4
 CACHE_TTL_SECONDS = 900
 
@@ -195,7 +196,14 @@ async def parse_archivo(
     fname = file.filename or "archivo.csv"
     try:
         df_raw = leer_archivo(raw, fname)
+        if len(df_raw) > MAX_FILAS_ESTRUCTURAS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"El archivo supera el máximo permitido de {MAX_FILAS_ESTRUCTURAS} filas (contiene {len(df_raw)} filas).",
+            )
         return _parse_payload(df_raw, fname)
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"No se pudo leer el archivo: {exc}") from exc
 
@@ -210,6 +218,11 @@ def ejecutar(
     """Valida discontinuidades, aplica filtros, ejecuta análisis Dips v9 y renderiza la vista activa."""
     if not data.filas:
         raise HTTPException(status_code=400, detail="Debes enviar al menos una discontinuidad.")
+    if len(data.filas) > MAX_FILAS_ESTRUCTURAS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Solo se admiten hasta {MAX_FILAS_ESTRUCTURAS} estructuras como máximo.",
+        )
 
     df_in = pd.DataFrame([row.model_dump() for row in data.filas])
     try:

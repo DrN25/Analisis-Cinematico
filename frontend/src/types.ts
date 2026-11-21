@@ -65,7 +65,7 @@ export interface ParseArchivoResponse {
   tipos_conteo: Record<string, number>;
 }
 
-export type VistaKey = 'general' | 'planar' | 'cuna' | 'flexural' | 'directo' | 'roseta';
+export type VistaKey = 'general' | 'planar' | 'cuna' | 'flexural' | 'directo';
 
 export interface TaludParams {
   nombre: string;
@@ -168,7 +168,7 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
   tamano_figura: 6,
   tamano_fuente: 9,
   resolucion: 201,
-  dpi_pantalla: 110,
+  dpi_pantalla: 140,
   dpi_exportar: 300,
 };
 

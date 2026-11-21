@@ -53,7 +53,7 @@ export const NumberInput: React.FC<Props> = ({
   return (
     <div className={`min-w-0 ${className}`}>
       <div className="flex items-center gap-1 mb-1 select-none">
-        <label className="text-[11px] font-medium text-slate-700 truncate">
+        <label title={label} className="text-[10.5px] font-medium text-slate-700 truncate">
           {label}
         </label>
         {help && <HelpTooltip text={help} />}
@@ -74,7 +74,7 @@ export const NumberInput: React.FC<Props> = ({
           step={step}
           value={value}
           onChange={handleChange}
-          className="flex-1 min-w-0 w-full px-1.5 py-0.5 text-xs text-center font-mono text-slate-800 focus:outline-none bg-transparent"
+          className="flex-1 min-w-0 w-full px-1 py-0.5 text-xs text-center font-mono tabular-nums text-slate-800 focus:outline-none bg-transparent"
         />
         <button
           type="button"
