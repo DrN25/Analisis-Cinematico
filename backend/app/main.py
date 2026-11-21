@@ -13,7 +13,7 @@ from app.routers.auth import router as auth_router
 
 app = FastAPI(
     title="Análisis Cinemático API",
-    description="API de análisis cinemático de taludes (Dips v9) con autenticación y auditoría.",
+    description="API de análisis cinemático de taludes (Dips v9) con autenticación y gestión de usuarios.",
     version="1.0.0",
 )
 

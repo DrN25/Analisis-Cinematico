@@ -1,4 +1,4 @@
-"""Rutas de administración: gestión de usuarios y logs de auditoría (solo rol admin)."""
+"""Rutas de administración: gestión de usuarios y registro de accesos (solo rol admin)."""
 import csv
 import io
 from datetime import datetime, timedelta
@@ -48,9 +48,14 @@ def list_users(
     db: Session = Depends(get_db),
     _: models.Usuario = Depends(require_admin),
 ):
-    """Lista los usuarios del sistema cinemático (excluye eliminados '*' salvo filtro explícito)."""
+    """Lista los usuarios del sistema cinemático con soporte para activos, inactivos y eliminados."""
     q = system_users(db)
-    q = q.filter(models.Usuario.estado == estado) if estado else q.filter(models.Usuario.estado != "*")
+    if estado:
+        est = estado.upper()
+        if est in ("A", "I", "*"):
+            q = q.filter(models.Usuario.estado == est)
+        elif est == "E":
+            q = q.filter(models.Usuario.estado == "*")
     return [serialize_user(u) for u in q.order_by(models.Usuario.usuario_id.desc()).all()]
 
 
@@ -193,6 +198,17 @@ def update_user_status(
         detalle=f"Cambió estado de {user.usuario} a {data.estado}", usuario_id=admin.usuario_id,
     )
     return serialize_user(user)
+
+
+@router.delete("/usuarios/{user_id}", response_model=schemas.UserOut)
+def delete_user(
+    user_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Usuario = Depends(require_admin),
+):
+    """Eliminación lógica ('*') de un usuario del sistema cinemático."""
+    return update_user_status(user_id, schemas.UserStatusIn(estado="*"), request, db, admin)
 
 
 def _query_logs(
