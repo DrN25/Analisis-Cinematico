@@ -1323,8 +1323,8 @@ export default function App() {
                         )}
                       </div>
 
-                      {/* Notas de los resultados (rectángulo a la derecha) */}
-                      <aside className="ac-notas shrink-0 md:w-[205px] lg:w-full xl:w-[200px] 2xl:w-[240px] md:self-stretch lg:self-auto xl:self-stretch md:overflow-y-auto lg:overflow-y-visible xl:overflow-y-auto flex flex-col">
+                      {/* Notas de los resultados (rectángulo a la derecha ajustado a su contenido) */}
+                      <aside className="ac-notas shrink-0 md:w-[215px] lg:w-full xl:w-[225px] 2xl:w-[250px] md:self-start lg:self-auto xl:self-start flex flex-col">
                         <div className="ac-notas-tit">Notas de los resultados</div>
                         <ol>
                           <li>
@@ -1371,6 +1371,7 @@ export default function App() {
       {/* Modales */}
       {showManualAdd && (
         <ManualStructuresModal
+          initialRows={filename === 'Estructuras manuales' ? rows : []}
           onClose={() => setShowManualAdd(false)}
           onSaveStructures={(manualRows) => {
             setRows(manualRows);

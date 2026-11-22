@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HelpTooltip } from './HelpTooltip';
 
 interface Props {
@@ -22,29 +22,50 @@ export const NumberInput: React.FC<Props> = ({
   help,
   className = '',
 }) => {
+  const [text, setText] = useState<string>(String(value));
+
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
+
+  const clamp = (n: number) => {
+    let out = n;
+    if (min !== undefined && out < min) out = min;
+    if (max !== undefined && out > max) out = max;
+    return out;
+  };
+
   const handleDecrement = () => {
-    const next = Math.round((value - step) * 1000) / 1000;
-    if (min !== undefined && next < min) {
-      onChange(min);
-    } else {
-      onChange(next);
-    }
+    const next = clamp(Math.round((value - step) * 1000) / 1000);
+    onChange(next);
   };
 
   const handleIncrement = () => {
-    const next = Math.round((value + step) * 1000) / 1000;
-    if (max !== undefined && next > max) {
-      onChange(max);
-    } else {
-      onChange(next);
-    }
+    const next = clamp(Math.round((value + step) * 1000) / 1000);
+    onChange(next);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    if (!isNaN(val)) {
+    const raw = e.target.value;
+    setText(raw);
+    const normalized = raw.replace(',', '.').trim();
+    if (normalized === '' || normalized === '-' || normalized.endsWith('.')) return;
+    const val = Number(normalized);
+    if (Number.isFinite(val)) {
       onChange(val);
     }
+  };
+
+  const handleBlur = () => {
+    const normalized = text.replace(',', '.').trim();
+    const val = Number(normalized);
+    if (!normalized || !Number.isFinite(val)) {
+      setText(String(value));
+      return;
+    }
+    const clamped = clamp(val);
+    onChange(clamped);
+    setText(String(clamped));
   };
 
   const atMin = min !== undefined && value <= min;
@@ -68,12 +89,11 @@ export const NumberInput: React.FC<Props> = ({
           −
         </button>
         <input
-          type="number"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
+          type="text"
+          inputMode="decimal"
+          value={text}
           onChange={handleChange}
+          onBlur={handleBlur}
           className="flex-1 min-w-0 w-full px-1 py-0.5 text-xs text-center font-mono tabular-nums text-slate-800 focus:outline-none bg-transparent"
         />
         <button

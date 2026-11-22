@@ -75,6 +75,7 @@ def figura_general(res, op):
         ax.contour(gx, gy, d, levels=niv, colors="k", linewidths=0.3, zorder=1)
         cax = ax.inset_axes(kw_barra_color(op))
         cb = fig.colorbar(cf, cax=cax, format="%.1f")
+        cb.set_label(f"{res.parametros.metodo_densidad} · máx {d.max():.1f} %", fontsize=fs - 1.5)
         cb.ax.tick_params(labelsize=fs - 2)
     paleta, polos, inters, planos = colormaps["tab10"], [], [], []
     varios = len(ctx["tipos"]) > 1
