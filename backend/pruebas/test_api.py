@@ -207,3 +207,70 @@ def test_flujo_analisis_figuras_export_y_logs(api_env):
     csv_res = client.get("/api/admin/logs/csv?accion=ANALISIS", headers=hdr)
     assert csv_res.status_code == 200
     assert "ANALISIS" in csv_res.text
+
+
+def test_mobile_refresh_token_y_revocacion(api_env):
+    client, SessionLocal, models = api_env
+    admin_tok = client.post(
+        "/api/auth/login", json={"username_or_email": "ADMIN", "password": "Admin2026!"}
+    ).json()["access_token"]
+
+    roles = client.get("/api/admin/roles", headers=_auth_header(admin_tok)).json()
+    user_role_id = next(r["rol_id"] for r in roles if r["nombre"] == "usuario")
+
+    created = client.post(
+        "/api/admin/usuarios",
+        headers=_auth_header(admin_tok),
+        json={
+            "usuario": "FIELD1",
+            "email": "field1@gema.com",
+            "nombre_completo": "Campo Uno",
+            "rol_id": user_role_id,
+            "password": "CampoPass1!",
+        },
+    )
+    assert created.status_code == 201
+    uid = created.json()["usuario_id"]
+
+    # Login con client="mobile" emite access de 24h (86400s) + refresh_token
+    login_res = client.post(
+        "/api/auth/login",
+        json={"username_or_email": "FIELD1", "password": "CampoPass1!", "client": "mobile"},
+    )
+    assert login_res.status_code == 200
+    data = login_res.json()
+    assert data["expires_in_seconds"] == 86400
+    assert data["refresh_expires_in_seconds"] >= 86400 * 7
+    access_1 = data["access_token"]
+    refresh_1 = data["refresh_token"]
+    assert refresh_1
+
+    # Un refresh_token NO debe aceptarse como Bearer access_token
+    assert client.get("/api/auth/me", headers=_auth_header(refresh_1)).status_code == 401
+    # Un access_token NO debe aceptarse en /api/auth/refresh
+    assert client.post("/api/auth/refresh", json={"refresh_token": access_1}).status_code == 401
+
+    # Refresh legítimo entrega nuevos tokens y registra TOKEN_REFRESH
+    ref_res = client.post("/api/auth/refresh", json={"refresh_token": refresh_1})
+    assert ref_res.status_code == 200
+    refresh_2 = ref_res.json()["refresh_token"]
+    access_2 = ref_res.json()["access_token"]
+    assert client.get("/api/auth/me", headers=_auth_header(access_2)).status_code == 200
+
+    with SessionLocal() as db:
+        acciones = [r.accion for r in db.query(models.LogAcceso).all()]
+    assert "TOKEN_REFRESH" in acciones
+
+    # Logout con revoke_sessions=True invalida todos los access y refresh previos
+    out_res = client.post("/api/auth/logout", headers=_auth_header(access_2), json={"revoke_sessions": True})
+    assert out_res.status_code == 200
+    assert client.post("/api/auth/refresh", json={"refresh_token": refresh_2}).status_code == 401
+    assert client.get("/api/auth/me", headers=_auth_header(access_2)).status_code == 401
+
+    # Nuevo login funciona, pero inactivar desde Admin revoca inmediatamente el refresh_token
+    login_2 = client.post(
+        "/api/auth/login",
+        json={"username_or_email": "FIELD1", "password": "CampoPass1!", "client": "mobile"},
+    ).json()
+    client.patch(f"/api/admin/usuarios/{uid}/estado", headers=_auth_header(admin_tok), json={"estado": "I"})
+    assert client.post("/api/auth/refresh", json={"refresh_token": login_2["refresh_token"]}).status_code == 401

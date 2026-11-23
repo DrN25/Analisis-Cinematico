@@ -12,6 +12,15 @@ from pydantic import BaseModel, Field
 class LoginIn(BaseModel):
     username_or_email: str
     password: str
+    client: Optional[Literal["web", "mobile"]] = "web"
+
+
+class RefreshIn(BaseModel):
+    refresh_token: str = Field(min_length=10)
+
+
+class LogoutIn(BaseModel):
+    revoke_sessions: bool = False
 
 
 class UserOut(BaseModel):
@@ -30,6 +39,9 @@ class UserOut(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    refresh_token: Optional[str] = None
+    expires_in_seconds: int = 43200
+    refresh_expires_in_seconds: int = 2592000
     user: UserOut
 
 

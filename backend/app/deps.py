@@ -54,18 +54,8 @@ def find_identity(db: Session, value: str) -> models.Usuario | None:
     )
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-    db: Session = Depends(get_db),
-) -> models.Usuario:
-    """Valida el JWT Bearer y retorna el usuario activo del sistema actual."""
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Sesión requerida.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    payload = decode_access_token(credentials.credentials)
+def resolve_user_from_claims(db: Session, payload: dict | None) -> models.Usuario:
+    """Valida claims estándar (sys, sub, ver) y devuelve al usuario activo no revocado."""
     if not payload or payload.get("sys") != SYSTEM_CODE:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -104,6 +94,21 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    db: Session = Depends(get_db),
+) -> models.Usuario:
+    """Valida el JWT Bearer y retorna el usuario activo del sistema actual."""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesión requerida.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    payload = decode_access_token(credentials.credentials)
+    return resolve_user_from_claims(db, payload)
 
 
 def require_admin(current_user: models.Usuario = Depends(get_current_user)) -> models.Usuario:
