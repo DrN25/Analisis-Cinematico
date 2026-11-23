@@ -1,2 +1,2 @@
-/api/*  http://138.68.55.242/api/:splat  200!
-/*      /index.html                     200
+/api/*  https://api-cinematico.mapeogema.dpdns.org/api/:splat  200!
+/*      /index.html                                       200
