@@ -1,0 +1,3 @@
+api-cinematico.mapeogema.dpdns.org {
+    reverse_proxy backend:8002
+}

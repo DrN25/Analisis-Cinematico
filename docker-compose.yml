@@ -6,7 +6,6 @@ services:
     env_file:
       - ./backend/.env
     ports:
-      - "80:8002"
       - "8002:8002"
     mem_limit: 1536m
     restart: unless-stopped
@@ -16,6 +15,20 @@ services:
       timeout: 5s
       retries: 3
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: gema-cinematico-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: gema-cinematico-tunnel
@@ -24,3 +37,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
