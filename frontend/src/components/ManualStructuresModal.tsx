@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import { DiscontinuidadRow } from '../types';
+import { handleTableArrowKey } from '../utils/tableNav';
 
 const MAX_ROWS = 50;
-const INITIAL_EMPTY_ROWS = 5;
+const INITIAL_EMPTY_ROWS = 1;
 
 interface ManualRow {
   buz: string;
@@ -12,6 +13,7 @@ interface ManualRow {
 }
 
 interface Props {
+  initialRows?: DiscontinuidadRow[];
   onClose: () => void;
   onSaveStructures: (rows: DiscontinuidadRow[]) => void;
 }
@@ -24,8 +26,8 @@ function isRowFilled(r: ManualRow): boolean {
 
 function getRowError(r: ManualRow): string | null {
   if (!isRowFilled(r)) return null;
-  if (r.buz.trim() === '' || r.dirbuz.trim() === '') {
-    return 'Completa Dip y Dip_dir';
+  if (r.buz.trim() === '' || r.dirbuz.trim() === '' || r.tipo.trim() === '') {
+    return 'Completa Dip, DipDir y Tipo de estructura';
   }
   const buz = Number(r.buz.replace(',', '.'));
   const dir = Number(r.dirbuz.replace(',', '.'));
@@ -33,18 +35,27 @@ function getRowError(r: ManualRow): string | null {
     return 'Dip debe estar entre 0° y 90°';
   }
   if (!Number.isFinite(dir) || dir < 0 || dir > 360) {
-    return 'Dip_dir debe estar entre 0° y 360°';
+    return 'DipDir debe estar entre 0° y 360°';
   }
   return null;
 }
 
 export const ManualStructuresModal: React.FC<Props> = ({
+  initialRows = [],
   onClose,
   onSaveStructures,
 }) => {
-  const [draft, setDraft] = useState<ManualRow[]>(() =>
-    Array.from({ length: INITIAL_EMPTY_ROWS }, emptyRow),
-  );
+  const [draft, setDraft] = useState<ManualRow[]>(() => {
+    if (initialRows.length > 0) {
+      return initialRows.slice(0, MAX_ROWS).map((r) => ({
+        buz: String(r.Buz ?? ''),
+        dirbuz: String(r.DirBuz ?? ''),
+        tipo: String(r.Tipo ?? ''),
+      }));
+    }
+    return Array.from({ length: INITIAL_EMPTY_ROWS }, emptyRow);
+  });
+  const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
 
   const updateCell = (idx: number, field: keyof ManualRow, val: string) => {
     setDraft((prev) =>
@@ -155,15 +166,15 @@ export const ManualStructuresModal: React.FC<Props> = ({
                     Dip (0-90°)
                   </th>
                   <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">
-                    Dip_dir (0-360°)
+                    DipDir (0-360°)
                   </th>
                   <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">
-                    Tipo_estructura
+                    Tipo de estructura
                   </th>
                   <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2 py-2 w-10" />
                 </tr>
               </thead>
-              <tbody>
+              <tbody ref={tbodyRef}>
                 {draft.map((row, idx) => {
                   const err = getRowError(row);
                   return (
@@ -176,26 +187,14 @@ export const ManualStructuresModal: React.FC<Props> = ({
                       </td>
                       <td className="px-1.5 py-1 border-b border-slate-100">
                         <input
-                          type="number"
-                          step="0.1"
-                          min={0}
-                          max={90}
+                          type="text"
+                          inputMode="decimal"
+                          data-row={idx}
+                          data-col={0}
                           placeholder="0 - 90"
                           value={row.buz}
                           onChange={(e) => updateCell(idx, 'buz', e.target.value)}
-                          onPaste={(e) => handlePaste(e, idx)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
-                        />
-                      </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
-                        <input
-                          type="number"
-                          step="0.1"
-                          min={0}
-                          max={360}
-                          placeholder="0 - 360"
-                          value={row.dirbuz}
-                          onChange={(e) => updateCell(idx, 'dirbuz', e.target.value)}
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 0, draft.length, 3, tbodyRef.current)}
                           onPaste={(e) => handlePaste(e, idx)}
                           className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
                         />
@@ -203,9 +202,26 @@ export const ManualStructuresModal: React.FC<Props> = ({
                       <td className="px-1.5 py-1 border-b border-slate-100">
                         <input
                           type="text"
-                          placeholder="Ej. Diaclasa, Falla..."
+                          inputMode="decimal"
+                          data-row={idx}
+                          data-col={1}
+                          placeholder="0 - 360"
+                          value={row.dirbuz}
+                          onChange={(e) => updateCell(idx, 'dirbuz', e.target.value)}
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 1, draft.length, 3, tbodyRef.current)}
+                          onPaste={(e) => handlePaste(e, idx)}
+                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
+                        />
+                      </td>
+                      <td className="px-1.5 py-1 border-b border-slate-100">
+                        <input
+                          type="text"
+                          data-row={idx}
+                          data-col={2}
+                          placeholder="Ej. Cizalla, Falla..."
                           value={row.tipo}
                           onChange={(e) => updateCell(idx, 'tipo', e.target.value)}
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 2, draft.length, 3, tbodyRef.current)}
                           onPaste={(e) => handlePaste(e, idx)}
                           className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
                         />

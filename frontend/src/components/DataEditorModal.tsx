@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AlertTriangle, Plus, Trash2, X } from 'lucide-react';
 import { DescartadaRow, DiscontinuidadRow } from '../types';
+import { handleTableArrowKey } from '../utils/tableNav';
 
 interface Props {
   rows: DiscontinuidadRow[];
@@ -11,6 +12,24 @@ interface Props {
 
 const MAX_ROWS = 50;
 
+function getRowError(row: DiscontinuidadRow): string | null {
+  const buzStr = String(row.Buz ?? '').trim();
+  const dirStr = String(row.DirBuz ?? '').trim();
+  const tipoStr = String(row.Tipo ?? '').trim();
+  if (!buzStr || !dirStr || !tipoStr) {
+    return 'Completa Dip, DipDir y Tipo de estructura';
+  }
+  const buz = Number(buzStr.replace(',', '.'));
+  const dir = Number(dirStr.replace(',', '.'));
+  if (!Number.isFinite(buz) || buz < 0 || buz > 90) {
+    return 'Dip debe estar entre 0° y 90°';
+  }
+  if (!Number.isFinite(dir) || dir < 0 || dir > 360) {
+    return 'DipDir debe estar entre 0° y 360°';
+  }
+  return null;
+}
+
 export const DataEditorModal: React.FC<Props> = ({
   rows,
   descartadas,
@@ -20,9 +39,10 @@ export const DataEditorModal: React.FC<Props> = ({
   const [draft, setDraft] = useState<DiscontinuidadRow[]>(() =>
     rows.length > 0
       ? rows.slice(0, MAX_ROWS).map((r) => ({ ...r }))
-      : [{ ID: 'D001', Buz: 45, DirBuz: 180, Tipo: 'Diaclasa', Persistencia: '' }],
+      : [{ ID: 'D001', Buz: 45, DirBuz: 180, Tipo: 'Cizalla', Persistencia: '' }],
   );
   const [tab, setTab] = useState<'validas' | 'descartadas'>('validas');
+  const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
 
   const updateCell = (idx: number, field: keyof DiscontinuidadRow, val: string) => {
     setDraft((prev) =>
@@ -37,14 +57,16 @@ export const DataEditorModal: React.FC<Props> = ({
         ...prev,
         {
           ID: `D${String(prev.length + 1).padStart(3, '0')}`,
-          Buz: 45,
-          DirBuz: 180,
-          Tipo: 'Diaclasa',
+          Buz: '',
+          DirBuz: '',
+          Tipo: '',
           Persistencia: '',
         },
       ];
     });
   };
+
+  const hasErrors = draft.some((r) => getRowError(r) !== null);
 
   const removeRow = (idx: number) => {
     setDraft((prev) => prev.filter((_, i) => i !== idx));
@@ -96,71 +118,74 @@ export const DataEditorModal: React.FC<Props> = ({
                 <thead>
                   <tr className="text-slate-700">
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left w-10">#</th>
-                    <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Celda</th>
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Dip (0–90°)</th>
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">DipDir (0–360°)</th>
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Tipo de estructura</th>
-                    <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Persistencia / Continuidad (m)</th>
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 w-10"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {draft.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/70">
+                <tbody ref={tbodyRef} className="divide-y divide-slate-100">
+                  {draft.map((row, idx) => {
+                    const err = getRowError(row);
+                    return (
+                    <tr key={idx} className={err ? 'bg-rose-50/50' : 'hover:bg-slate-50/70'}>
                       <td className="px-2.5 py-1 text-slate-400 border-b border-slate-100">{idx + 1}</td>
                       <td className="px-1.5 py-1 border-b border-slate-100">
                         <input
-                          value={row.ID ?? ''}
-                          onChange={(e) => updateCell(idx, 'ID', e.target.value)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
-                        />
-                      </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
-                        <input
-                          type="number"
-                          step="0.1"
+                          type="text"
+                          inputMode="decimal"
+                          data-row={idx}
+                          data-col={0}
+                          placeholder="0 - 90"
                           value={row.Buz ?? ''}
                           onChange={(e) => updateCell(idx, 'Buz', e.target.value)}
-                          className="w-24 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 0, draft.length, 3, tbodyRef.current)}
+                          className="w-28 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
                         />
                       </td>
                       <td className="px-1.5 py-1 border-b border-slate-100">
                         <input
-                          type="number"
-                          step="0.1"
+                          type="text"
+                          inputMode="decimal"
+                          data-row={idx}
+                          data-col={1}
+                          placeholder="0 - 360"
                           value={row.DirBuz ?? ''}
                           onChange={(e) => updateCell(idx, 'DirBuz', e.target.value)}
-                          className="w-24 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 1, draft.length, 3, tbodyRef.current)}
+                          className="w-28 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
                         />
                       </td>
                       <td className="px-1.5 py-1 border-b border-slate-100">
                         <input
+                          type="text"
+                          data-row={idx}
+                          data-col={2}
+                          placeholder="Ej. Cizalla, Falla..."
                           value={row.Tipo ?? ''}
                           onChange={(e) => updateCell(idx, 'Tipo', e.target.value)}
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 2, draft.length, 3, tbodyRef.current)}
                           className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
                         />
-                      </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={row.Persistencia ?? ''}
-                          onChange={(e) => updateCell(idx, 'Persistencia', e.target.value)}
-                          className="w-28 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
-                        />
+                        {err && (
+                          <div className="text-[10px] text-rose-700 mt-0.5 font-medium">
+                            {err}
+                          </div>
+                        )}
                       </td>
                       <td className="px-1.5 py-1 text-center border-b border-slate-100">
                         <button
                           type="button"
                           onClick={() => removeRow(idx)}
-                          className="p-1 text-slate-400 hover:text-red-700 rounded"
+                          className="p-1 text-slate-400 hover:text-red-700 rounded cursor-pointer"
                           title="Eliminar fila"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -173,7 +198,6 @@ export const DataEditorModal: React.FC<Props> = ({
               <table className="w-full text-xs border-separate border-spacing-0">
                 <thead>
                   <tr className="text-amber-900">
-                    <th className="sticky top-0 z-20 bg-amber-50 border-b border-amber-200 px-3 py-2 text-left">Celda</th>
                     <th className="sticky top-0 z-20 bg-amber-50 border-b border-amber-200 px-3 py-2 text-left">Dip</th>
                     <th className="sticky top-0 z-20 bg-amber-50 border-b border-amber-200 px-3 py-2 text-left">DipDir</th>
                     <th className="sticky top-0 z-20 bg-amber-50 border-b border-amber-200 px-3 py-2 text-left">Motivo</th>
@@ -182,7 +206,6 @@ export const DataEditorModal: React.FC<Props> = ({
                 <tbody>
                   {descartadas.map((d, i) => (
                     <tr key={i} className="hover:bg-amber-50/40">
-                      <td className="px-3 py-1.5 border-b border-slate-100">{d.ID ?? '—'}</td>
                       <td className="px-3 py-1.5 border-b border-slate-100">{d.Buz ?? '—'}</td>
                       <td className="px-3 py-1.5 border-b border-slate-100">{d.DirBuz ?? '—'}</td>
                       <td className="px-3 py-1.5 border-b border-slate-100 text-amber-800">{d.Motivo}</td>
@@ -225,9 +248,9 @@ export const DataEditorModal: React.FC<Props> = ({
             </button>
             <button
               type="button"
-              disabled={draft.length === 0 || draft.length > MAX_ROWS}
+              disabled={draft.length === 0 || draft.length > MAX_ROWS || hasErrors}
               onClick={() => onApplyAndRun(draft)}
-              className="px-4 py-1.5 text-xs font-semibold bg-[#881337] hover:bg-[#6F0F2C] disabled:opacity-50 text-white rounded-lg cursor-pointer"
+              className="px-4 py-1.5 text-xs font-semibold bg-[#881337] hover:bg-[#6F0F2C] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg cursor-pointer"
             >
               Aplicar y ejecutar análisis
             </button>

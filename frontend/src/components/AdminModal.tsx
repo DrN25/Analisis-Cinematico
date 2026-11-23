@@ -205,8 +205,8 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-3 select-none">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-7xl h-[88vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[1px] flex items-center justify-center p-2 sm:p-3 select-none">
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-7xl h-[92vh] sm:h-[88vh] flex flex-col overflow-hidden">
         {/* Cabecera */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-200">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -218,9 +218,8 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
               <button
                 type="button"
                 onClick={() => setTab('usuarios')}
-                className={`px-3 py-1 rounded-md font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  tab === 'usuarios' ? 'bg-white text-[#881337] shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1 rounded-md font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${tab === 'usuarios' ? 'bg-white text-[#881337] shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Users className="w-3.5 h-3.5" />
                 Usuarios ({users.length})
@@ -228,9 +227,8 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
               <button
                 type="button"
                 onClick={() => setTab('logs')}
-                className={`px-3 py-1 rounded-md font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  tab === 'logs' ? 'bg-white text-[#881337] shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1 rounded-md font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${tab === 'logs' ? 'bg-white text-[#881337] shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Activity className="w-3.5 h-3.5" />
                 Logs de acceso
@@ -265,61 +263,57 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
             <div className="lg:col-span-8 flex flex-col min-h-[260px] lg:min-h-0">
               {/* Barra superior de filtros de estado y búsqueda */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3 shrink-0">
-                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs">
+                <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs">
                   <button
                     type="button"
                     onClick={() => setUserStatusFilter('TODOS')}
-                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                      userStatusFilter === 'TODOS'
+                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${userStatusFilter === 'TODOS'
                         ? 'bg-white text-slate-900 shadow-xs font-semibold'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     Todos ({countTodos})
                   </button>
                   <button
                     type="button"
                     onClick={() => setUserStatusFilter('A')}
-                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                      userStatusFilter === 'A'
+                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${userStatusFilter === 'A'
                         ? 'bg-white text-emerald-700 shadow-xs font-semibold'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     Activos ({countActivos})
                   </button>
                   <button
                     type="button"
                     onClick={() => setUserStatusFilter('I')}
-                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                      userStatusFilter === 'I'
+                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${userStatusFilter === 'I'
                         ? 'bg-white text-amber-800 shadow-xs font-semibold'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     Inactivos ({countInactivos})
                   </button>
                   <button
                     type="button"
                     onClick={() => setUserStatusFilter('*')}
-                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                      userStatusFilter === '*'
+                    className={`px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${userStatusFilter === '*'
                         ? 'bg-white text-rose-700 shadow-xs font-semibold'
                         : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     Eliminados ({countEliminados})
                   </button>
                 </div>
 
-                <div className="relative flex items-center">
+                <div className="relative flex items-center w-full sm:w-auto">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
                   <input
                     type="text"
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
                     placeholder="Buscar usuario o correo…"
-                    className="pl-8 pr-6 py-1 text-xs border border-slate-300 rounded-lg w-52 focus:outline-none focus:border-[#881337] bg-white"
+                    className="pl-8 pr-6 py-1 text-xs border border-slate-300 rounded-lg w-full sm:w-52 focus:outline-none focus:border-[#881337] bg-white"
                   />
                   {userSearch && (
                     <button
@@ -334,16 +328,16 @@ export const AdminModal: React.FC<Props> = ({ currentUser, onClose }) => {
               </div>
 
               {/* Tabla de usuarios */}
-              <div className="border border-slate-200 rounded-xl overflow-y-auto overflow-x-hidden flex-1 min-h-0 bg-white">
-                <table className="w-full text-xs border-separate border-spacing-0 table-fixed">
+              <div className="border border-slate-200 rounded-xl overflow-auto flex-1 min-h-0 bg-white">
+                <table className="w-full min-w-[700px] text-xs border-separate border-spacing-0">
                   <thead>
                     <tr className="text-slate-700">
-                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-3 py-2 text-left w-[18%]">Usuario</th>
-                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-3 py-2 text-left w-[26%]">Nombre / Correo</th>
-                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2 py-2 text-left w-[10%]">Rol</th>
-                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2 py-2 text-left w-[14%]">Último acceso</th>
-                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left w-[12%]">Estado</th>
-                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-3 py-2 text-right w-[20%]">Acciones</th>
+                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-3 py-2 text-left">Usuario</th>
+                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-3 py-2 text-left">Nombre / Correo</th>
+                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2 py-2 text-left">Rol</th>
+                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2 py-2 text-left whitespace-nowrap">Último acceso</th>
+                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Estado</th>
+                      <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-3 py-2 text-right whitespace-nowrap">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
