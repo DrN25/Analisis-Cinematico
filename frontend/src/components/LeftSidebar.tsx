@@ -248,7 +248,9 @@ export const LeftSidebar: React.FC<Props> = ({
               />
               <span>Contornos de densidad</span>
             </label>
+            {/* OCULTO POR REQUERIMIENTO: interrogación (?) quitada de Contornos de densidad.
             <HelpTooltip text="Contornos de densidad de polos en todas las vistas." />
+            */}
           </div>
 
           {/*

@@ -682,9 +682,11 @@ export default function App() {
 
             {showDescargas && (
               <div className="fixed inset-x-3 top-[116px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-1 sm:w-80 bg-white border border-slate-200 rounded-lg shadow-xl p-3 z-50 text-xs text-slate-700 space-y-2">
+                {/* OCULTO POR REQUERIMIENTO: ocultar aviso "Los archivos se generan en tu equipo..." al exportar.
                 <p className="text-[11px] text-slate-500 italic pb-1 border-b border-slate-100 leading-snug">
                   Los archivos se generan en tu equipo; los datos no se suben a ningún servidor.
                 </p>
+                */}
 
                 <button
                   type="button"
