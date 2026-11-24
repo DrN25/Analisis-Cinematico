@@ -31,7 +31,7 @@ class OpcionesEstereograma:
     ancho_borde: float = 3.0               # Outer Grid Width
     ancho_interno: float = 1.0             # Inner Grid Width
     ancho_superposicion: float = 1.0       # Overlay Width
-    escala_leyenda: float = 100.0          # Legend Scale (%)
+    escala_leyenda: float = 110.0          # Legend Scale (%) - fijo 110%
     ubicacion_leyenda: str = "derecha"     # Legend Location: "derecha" · "izquierda" · "abajo" · "ninguna"
     etiqueta_filtro: bool = True           # Filter Label
     # --- Red (Stereonet Overlay) ---
@@ -48,7 +48,7 @@ class OpcionesEstereograma:
     simbolo_por_tipo: bool = True
     tamano_por_persistencia: bool = True
     tamano_simbolo: float = 30.0         # base de las intersecciones (se reduce sola con miles de puntos)
-    tamano_polo: float = 10.0            # base de los polos (puntos²), elegido en «Tamaño de los polos»
+    tamano_polo: float = 12.0            # base de los polos (puntos²), fijo en 12
     contornos_general: bool = True
     contornos_en_mecanismos: bool = True   # contornos de polos bajo cada mecanismo
     mapa_color: str = "YlOrRd"               # (sin uso en las figuras; se conserva por compatibilidad)
@@ -57,7 +57,7 @@ class OpcionesEstereograma:
     titulo: bool = True
     caja_info: bool = True
     mostrar_proyeccion: bool = True
-    tamano_figura: float = 6.0
+    tamano_figura: float = 6.8
     tamano_fuente: float = 9.0
     resolucion: int = 201                  # puntos por lado de la malla de zonas y contornos
     dpi_pantalla: int = 110

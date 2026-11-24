@@ -42,7 +42,8 @@ def normalizar_columnas(df):
         raise ValueError(f"Falta la columna {faltan}. Columnas leídas: {list(df.columns)}. "
                          f"Nombres aceptados: {ALIAS['Buz']} / {ALIAS['DirBuz']}")
     if "ID" not in df.columns:
-        df.insert(0, "ID", [f"D{i + 1:03d}" for i in range(len(df))])
+        # Formato de etiqueta general P1, P2, ... (antes D001)
+        df.insert(0, "ID", [f"P{i + 1}" for i in range(len(df))])
     if "Tipo" not in df.columns:
         df["Tipo"] = "Sin tipo"
     if "Persistencia" not in df.columns:

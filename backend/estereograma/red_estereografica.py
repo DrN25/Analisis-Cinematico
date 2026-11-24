@@ -5,6 +5,10 @@ import numpy as np
 from cinematica.geometria_esferica import lineas_circulo_maximo, lineas_cono_horizontal, lineas_cono_vertical, lineas_radial
 from estereograma.proyeccion_estereografica import _es_wulff, proyectar
 
+# Dimensiones del área del estereograma dentro de la figura (ajustar aquí para agrandar o reducir)
+EJE_DERECHA_RECT = [0.01, 0.02, 0.63, 0.92]
+EJE_IZQUIERDA_RECT = [0.36, 0.02, 0.63, 0.92]
+
 
 def trazar_lineas(ax, op, lineas, **kw):
     """Proyecta una secuencia (trend, plunge) y la dibuja."""
@@ -92,11 +96,12 @@ def nueva_figura(op, titulo="", filtro=""):
         ax = fig.add_axes([0.02, 0.02, 0.96, 0.9])
     else:
         fig = plt.figure(figsize=(T * 1.6, T))
-        ax = fig.add_axes([0.40, 0.02, 0.59, 0.9] if u == "izquierda" else [0.01, 0.02, 0.59, 0.9])
+        ax = fig.add_axes(EJE_IZQUIERDA_RECT if u == "izquierda" else EJE_DERECHA_RECT)
     dibujar_red(ax, op, titulo)
-    if op.etiqueta_filtro and filtro:
-        ax.text(0.0, 1.0, filtro, transform=ax.transAxes, ha="left", va="top", fontsize=op.tamano_fuente - 1.5,
-                style="italic", color="0.3")
+    # OCULTO POR REQUERIMIENTO: no mostrar "Sin filtro" dentro del gráfico; conservar lógica comentada.
+    # if op.etiqueta_filtro and filtro:
+    #     ax.text(0.0, 1.0, filtro, transform=ax.transAxes, ha="left", va="top", fontsize=op.tamano_fuente - 1.5,
+    #             style="italic", color="0.3")
     return fig, ax
 
 

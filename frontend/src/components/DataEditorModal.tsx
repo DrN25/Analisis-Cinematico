@@ -15,9 +15,8 @@ const MAX_ROWS = 50;
 function getRowError(row: DiscontinuidadRow): string | null {
   const buzStr = String(row.Buz ?? '').trim();
   const dirStr = String(row.DirBuz ?? '').trim();
-  const tipoStr = String(row.Tipo ?? '').trim();
-  if (!buzStr || !dirStr || !tipoStr) {
-    return 'Completa Dip, DipDir y Tipo de estructura';
+  if (!buzStr || !dirStr) {
+    return 'Completa Dip y DipDir';
   }
   const buz = Number(buzStr.replace(',', '.'));
   const dir = Number(dirStr.replace(',', '.'));
@@ -39,7 +38,7 @@ export const DataEditorModal: React.FC<Props> = ({
   const [draft, setDraft] = useState<DiscontinuidadRow[]>(() =>
     rows.length > 0
       ? rows.slice(0, MAX_ROWS).map((r) => ({ ...r }))
-      : [{ ID: 'D001', Buz: 45, DirBuz: 180, Tipo: 'Cizalla', Persistencia: '' }],
+      : [{ ID: 'P1', Buz: 45, DirBuz: 180, Tipo: 'Sin tipo', Persistencia: '' }],
   );
   const [tab, setTab] = useState<'validas' | 'descartadas'>('validas');
   const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
@@ -56,10 +55,10 @@ export const DataEditorModal: React.FC<Props> = ({
       return [
         ...prev,
         {
-          ID: `D${String(prev.length + 1).padStart(3, '0')}`,
+          ID: `P${prev.length + 1}`,
           Buz: '',
           DirBuz: '',
-          Tipo: '',
+          Tipo: 'Sin tipo',
           Persistencia: '',
         },
       ];
@@ -120,7 +119,7 @@ export const DataEditorModal: React.FC<Props> = ({
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left w-10">#</th>
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Dip (0–90°)</th>
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">DipDir (0–360°)</th>
-                    <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">Tipo de estructura</th>
+                    {/* OCULTO POR REQUERIMIENTO: columna Tipo de estructura ocultada; no reactivar sin confirmación. */}
                     <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 w-10"></th>
                   </tr>
                 </thead>
@@ -130,7 +129,7 @@ export const DataEditorModal: React.FC<Props> = ({
                     return (
                     <tr key={idx} className={err ? 'bg-rose-50/50' : 'hover:bg-slate-50/70'}>
                       <td className="px-2.5 py-1 text-slate-400 border-b border-slate-100">{idx + 1}</td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
+                      <td className="px-1.5 py-1 border-b border-slate-100 align-top">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -139,11 +138,11 @@ export const DataEditorModal: React.FC<Props> = ({
                           placeholder="0 - 90"
                           value={row.Buz ?? ''}
                           onChange={(e) => updateCell(idx, 'Buz', e.target.value)}
-                          onKeyDown={(e) => handleTableArrowKey(e, idx, 0, draft.length, 3, tbodyRef.current)}
-                          className="w-28 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 0, draft.length, 2, tbodyRef.current)}
+                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
                         />
                       </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
+                      <td className="px-1.5 py-1 border-b border-slate-100 align-top">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -152,20 +151,8 @@ export const DataEditorModal: React.FC<Props> = ({
                           placeholder="0 - 360"
                           value={row.DirBuz ?? ''}
                           onChange={(e) => updateCell(idx, 'DirBuz', e.target.value)}
-                          onKeyDown={(e) => handleTableArrowKey(e, idx, 1, draft.length, 3, tbodyRef.current)}
-                          className="w-28 px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
-                        />
-                      </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
-                        <input
-                          type="text"
-                          data-row={idx}
-                          data-col={2}
-                          placeholder="Ej. Cizalla, Falla..."
-                          value={row.Tipo ?? ''}
-                          onChange={(e) => updateCell(idx, 'Tipo', e.target.value)}
-                          onKeyDown={(e) => handleTableArrowKey(e, idx, 2, draft.length, 3, tbodyRef.current)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 1, draft.length, 2, tbodyRef.current)}
+                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
                         />
                         {err && (
                           <div className="text-[10px] text-rose-700 mt-0.5 font-medium">

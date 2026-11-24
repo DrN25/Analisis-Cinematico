@@ -127,7 +127,7 @@ export interface OpcionesPlot {
   tamano_fuente: number;
   resolucion: number;
   dpi_pantalla: number;
-  dpi_exportar: number;
+  // dpi_exportar eliminado de la lógica por requerimiento (resolución fija por defecto en backend)
 }
 
 export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
@@ -143,7 +143,7 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
   ancho_borde: 3,
   ancho_interno: 1,
   ancho_superposicion: 1,
-  escala_leyenda: 100,
+  escala_leyenda: 110,
   ubicacion_leyenda: 'derecha',
   etiqueta_filtro: true,
   red: 'ecuatorial',
@@ -157,7 +157,7 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
   simbolo_por_tipo: true,
   tamano_por_persistencia: true,
   tamano_simbolo: 30,
-  tamano_polo: 10,
+  tamano_polo: 12,
   contornos_general: true,
   contornos_en_mecanismos: true,
   mapa_color: 'YlOrRd',
@@ -165,11 +165,10 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
   titulo: true,
   caja_info: true,
   mostrar_proyeccion: true,
-  tamano_figura: 6,
+  tamano_figura: 6.8,
   tamano_fuente: 9,
   resolucion: 201,
   dpi_pantalla: 140,
-  dpi_exportar: 300,
 };
 
 export interface VeredictoMecanismo {

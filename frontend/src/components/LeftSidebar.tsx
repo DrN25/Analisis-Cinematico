@@ -15,7 +15,6 @@ import { HelpTooltip } from './HelpTooltip';
 import { NumberInput } from './NumberInput';
 import {
   DipsParams,
-  FiltroParams,
   OpcionesPlot,
   TaludParams,
 } from '../types';
@@ -28,9 +27,6 @@ interface Props {
   filename: string;
   totalRows: number;
   descartadasCount: number;
-  tiposConteo: Record<string, number>;
-  filtro: FiltroParams;
-  onChangeFiltro: (f: FiltroParams) => void;
   talud: TaludParams;
   onChangeTalud: (t: TaludParams) => void;
   parametros: DipsParams;
@@ -86,9 +82,6 @@ export const LeftSidebar: React.FC<Props> = ({
   filename,
   totalRows,
   descartadasCount,
-  tiposConteo,
-  filtro,
-  onChangeFiltro,
   talud,
   onChangeTalud,
   parametros,
@@ -107,23 +100,6 @@ export const LeftSidebar: React.FC<Props> = ({
 }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const tiposDisponibles = Object.keys(tiposConteo);
-  const tiposActivos = filtro.tipos ?? tiposDisponibles;
-
-  const toggleTipo = (t: string) => {
-    const set = new Set(tiposActivos);
-    if (set.has(t)) {
-      if (set.size > 1) set.delete(t);
-    } else {
-      set.add(t);
-    }
-    const next = Array.from(set);
-    onChangeFiltro({
-      ...filtro,
-      tipos: next.length === tiposDisponibles.length ? null : next,
-    });
-  };
-
   const setOpt = <K extends keyof OpcionesPlot>(key: K, val: OpcionesPlot[K]) => {
     onChangeOpciones({ ...opciones, [key]: val });
   };
@@ -136,7 +112,7 @@ export const LeftSidebar: React.FC<Props> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-1">
             <span className={labelCls}>Archivo CSV o Excel</span>
-            <HelpTooltip text="Columnas: Buz, DirBuz, Tipo, Persistencia (también Dip, Dip Direction, Type…). Solo Buz y DirBuz son obligatorias. La fila de encabezados puede no ser la primera." />
+            <HelpTooltip text="Columnas obligatorias: Buz (Dip) y DirBuz (Dip Direction). Opcionales: Tipo y Persistencia. La fila de encabezados puede no ser la primera." />
           </div>
 
           {totalRows > 0 ? (
@@ -170,14 +146,15 @@ export const LeftSidebar: React.FC<Props> = ({
             </div>
           )}
 
-            <button
-              type="button"
-              onClick={onOpenManualAdd}
-              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 border border-[#881337]/30 hover:border-[#881337]/60 bg-rose-50/50 hover:bg-rose-50 text-[#881337] rounded text-xs font-semibold transition-colors shadow-xs cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Agregar estructuras</span>
-            </button>
+          <button
+            type="button"
+            onClick={onOpenManualAdd}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 border border-[#881337]/30 hover:border-[#881337]/60 bg-rose-50/50 hover:bg-rose-50 text-[#881337] rounded text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {/* Etiqueta simplificada a "Agregar" (antes "Agregar estructuras") */}
+            <span>Agregar</span>
+          </button>
 
           {/* Acciones de carga y limpieza */}
           <div className="grid grid-cols-2 gap-1.5 pt-0.5">
@@ -201,102 +178,31 @@ export const LeftSidebar: React.FC<Props> = ({
             </button>
           </div>
 
-          {tiposDisponibles.length > 0 && (
-            <div className="pt-1 border-t border-slate-100">
-              <span className={labelCls}>Tipos a analizar</span>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {tiposDisponibles.map((t) => {
-                  const active = tiposActivos.includes(t);
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => toggleTipo(t)}
-                      className={`px-2 py-0.5 text-[11px] border rounded transition-colors cursor-pointer ${active
-                        ? 'bg-[#881337] border-[#881337] text-white font-medium'
-                        : 'bg-white border-slate-200 text-slate-400 line-through'
-                        }`}
-                    >
-                      {t} ({tiposConteo[t]})
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {/*
+            OCULTO POR REQUERIMIENTO: sección "Tipos a analizar" ocultada al retirar Tipo de estructura en tablas.
+            No mostrar en UI ni reactivar accidentalmente; filtro.tipos permanece en null.
+          */}
 
         </div>
       </TreeGroup>
 
       {/* 2 · Opciones del estereograma */}
       <TreeGroup title="2 · Opciones del estereograma" defaultOpen={true}>
+        {/* OCULTO POR REQUERIMIENTO: se retiró "Más opciones en el menú superior." porque ese menú está oculto. */}
         <p className="text-[10.5px] text-slate-500 italic pb-0.5">
-          Solo cambian el dibujo; no recalculan el análisis. Más opciones en el menú superior.
+          Solo cambian el dibujo; no recalculan el análisis.
         </p>
 
-        <div>
-          <div className="flex items-center justify-between mb-0.5">
-            <label className={`${labelCls} flex items-center gap-1`}>
-              <span>Tamaño de los polos</span>
-              <HelpTooltip text="Tamaño base del símbolo de los polos. Con «Tamaño por persistencia» se multiplica por la clase de persistencia (ISRM)." />
-            </label>
-            <span className="font-mono text-xs text-[#881337] font-semibold">
-              {opciones.tamano_polo ?? 10}
-            </span>
-          </div>
-          <input
-            type="range"
-            min={2}
-            max={60}
-            step={1}
-            value={opciones.tamano_polo ?? 10}
-            onChange={(e) => setOpt('tamano_polo', Number(e.target.value))}
-            className="w-full accent-[#881337] h-1.5 cursor-pointer"
-          />
-        </div>
+        {/*
+          OCULTO POR REQUERIMIENTO: "Tamaño de los polos" (fijo en 12), "Proyección" (Equiárea),
+          "Hemisferio" (Inferior) y "Red" (Ecuatorial) no se muestran en UI pero siguen activos en DEFAULT_OPCIONES_PLOT
+          y visibles como resumen en la barra inferior. No reactivar estos controles en UI sin confirmación.
 
-        <div className="min-w-0">
-          <label className={labelCls}>Proyección</label>
-          <select
-            value={opciones.proyeccion}
-            onChange={(e) =>
-              setOpt('proyeccion', e.target.value as 'equiarea' | 'equiangulo')
-            }
-            className={selectCls}
-          >
-            <option value="equiarea">Equiárea (Schmidt)</option>
-            <option value="equiangulo">Equiángulo (Wulff)</option>
-          </select>
-        </div>
-
-        <div className="min-w-0">
-          <label className={labelCls}>Hemisferio</label>
-          <select
-            value={opciones.hemisferio}
-            onChange={(e) =>
-              setOpt('hemisferio', e.target.value as 'inferior' | 'superior')
-            }
-            className={selectCls}
-          >
-            <option value="inferior">Inferior</option>
-            <option value="superior">Superior</option>
-          </select>
-        </div>
-
-        <div className="min-w-0">
-          <label className={labelCls}>Red</label>
-          <select
-            value={opciones.red}
-            onChange={(e) =>
-              setOpt('red', e.target.value as 'polar' | 'ecuatorial' | 'ninguna')
-            }
-            className={selectCls}
-          >
-            <option value="ecuatorial">Ecuatorial</option>
-            <option value="polar">Polar</option>
-            <option value="ninguna">Ninguna</option>
-          </select>
-        </div>
+          <div>Tamaño de los polos (fijo en 12)</div>
+          <div>Proyección (Equiárea - Schmidt)</div>
+          <div>Hemisferio (Inferior)</div>
+          <div>Red (Ecuatorial)</div>
+        */}
 
         {/* Color de los contornos: Azules, Verdes, Morados, Grises */}
         <div className="min-w-0">
@@ -343,17 +249,21 @@ export const LeftSidebar: React.FC<Props> = ({
             <HelpTooltip text="Contornos de densidad de polos en todas las vistas." />
           </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={opciones.tamano_por_persistencia ?? true}
-                onChange={(e) => setOpt('tamano_por_persistencia', e.target.checked)}
-                className="accent-[#881337] rounded"
-              />
-              <span>Tamaño por persistencia</span>
-            </label>
-          </div>
+          {/*
+            OCULTO POR REQUERIMIENTO: "Tamaño por persistencia" oculto en UI;
+            permanece activo en DEFAULT_OPCIONES_PLOT (types.ts). No reactivar en UI sin confirmación.
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={opciones.tamano_por_persistencia ?? true}
+                  onChange={(e) => setOpt('tamano_por_persistencia', e.target.checked)}
+                  className="accent-[#881337] rounded"
+                />
+                <span>Tamaño por persistencia</span>
+              </label>
+            </div>
+          */}
 
           <div className="flex items-center justify-between">
             <label

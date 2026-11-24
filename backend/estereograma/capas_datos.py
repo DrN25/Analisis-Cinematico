@@ -71,12 +71,18 @@ def capa_polos(ax, op, ctx, tabla, critico, color_crit=None):
     critico = np.asarray(critico, bool)
     for es_crit, color in ((False, op.colores["no_critico"]), (True, color_crit or op.colores["critico"])):
         sub = tabla[critico == es_crit]
-        for tipo, s2 in sub.groupby("Tipo", sort=False):   # tamaño elegido por el usuario (op.tamano_polo)
-            puntos(ax, op, *polo_de_plano(s2.Buz, s2.DirBuz), color, marcador(tipo, op, ctx),
-                   tamanos(s2.Clase_P, op, op.tamano_polo), z=4 if es_crit else 3,
-                   lw=0.5 if op.tamano_polo >= 12 else 0.25)
+        # OCULTO POR REQUERIMIENTO: no distinguir símbolo por tipo de estructura; usar marcador circular uniforme.
+        # for tipo, s2 in sub.groupby("Tipo", sort=False):   # tamaño elegido por el usuario (op.tamano_polo)
+        #     puntos(ax, op, *polo_de_plano(s2.Buz, s2.DirBuz), color, marcador(tipo, op, ctx),
+        #            tamanos(s2.Clase_P, op, op.tamano_polo), z=4 if es_crit else 3,
+        #            lw=0.5 if op.tamano_polo >= 12 else 0.25)
+        puntos(ax, op, *polo_de_plano(sub.Buz, sub.DirBuz), color, "o",
+               tamanos(sub.Clase_P, op, op.tamano_polo), z=4 if es_crit else 3,
+               lw=0.5 if op.tamano_polo >= 12 else 0.25)
     if op.etiquetas_polos == "todos" and len(tabla) <= MAX_ETIQUETAS:   # interruptor «Etiquetas de los polos»
-        etiquetar(ax, op, *polo_de_plano(tabla.Buz, tabla.DirBuz), tabla.ID)
+        # OCULTO POR REQUERIMIENTO: rotular polos como P1..Pn en lugar de prefijos estructurales (J, F, S, D...)
+        # etiquetar(ax, op, *polo_de_plano(tabla.Buz, tabla.DirBuz), tabla.ID)
+        etiquetar(ax, op, *polo_de_plano(tabla.Buz, tabla.DirBuz), [f"P{idx + 1}" for idx in range(len(tabla))])
 
 
 def capa_planos(ax, op, tabla, grupos):

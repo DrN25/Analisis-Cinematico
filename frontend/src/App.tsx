@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Archive,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   FileSpreadsheet,
-  Image as ImageIcon,
   KeyRound,
   LogOut,
   Shield,
@@ -28,7 +26,6 @@ import { HelpModal } from './components/HelpModal';
 import { LeftSidebar } from './components/LeftSidebar';
 import { LoginView } from './components/LoginView';
 import { ManualStructuresModal } from './components/ManualStructuresModal';
-import { NumberInput } from './components/NumberInput';
 import {
   AnalisisResponse,
   DEFAULT_OPCIONES_PLOT,
@@ -52,9 +49,16 @@ const VISTAS: { id: VistaKey; label: string }[] = [
   { id: 'directo', label: 'Toppling directo' },
 ];
 
+// Configuración de disposición y tamaño del gráfico estereográfico (ajustar aquí para agrandar/reducir)
+const CHART_LAYOUT = {
+  cardsColumnClass: 'lg:w-[215px] xl:w-[220px] 2xl:w-[235px]',
+  notesColumnClass: 'md:w-[215px] lg:w-[210px] xl:w-[225px] 2xl:w-[250px]',
+  chartContainerClass: 'min-h-[340px] sm:min-h-[440px] lg:min-h-0 p-1',
+  chartImageMaxHeightClass: 'max-h-[76vh] lg:max-h-full',
+} as const;
+
 function getVisualOpcionesKey(op: OpcionesPlot): string {
-  const { dpi_exportar: _ignored, ...visual } = op;
-  return JSON.stringify(visual);
+  return JSON.stringify(op);
 }
 
 function cacheFigure(cache: Map<string, string>, key: string, dataUrl: string) {
@@ -75,7 +79,6 @@ export default function App() {
   const [filename, setFilename] = useState('discontinuidades_ejemplo.csv');
   const [rows, setRows] = useState<DiscontinuidadRow[]>([]);
   const [descartadas, setDescartadas] = useState<DescartadaRow[]>([]);
-  const [tiposConteo, setTiposConteo] = useState<Record<string, number>>({});
 
   const [filtro, setFiltro] = useState<FiltroParams>({ tipos: null, persistencia_min: 0 });
   const [talud, setTalud] = useState<TaludParams>({ nombre: 'Talud 1', buz: 70, dirbuz: 180 });
@@ -110,11 +113,9 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<'analisis' | 'referencias'>('analisis');
   const [showDescargas, setShowDescargas] = useState(false);
-  const [showMasOpciones, setShowMasOpciones] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const descargasRef = useRef<HTMLDivElement | null>(null);
-  const masOpcionesRef = useRef<HTMLDivElement | null>(null);
   const figureCacheRef = useRef<Map<string, string>>(new Map());
   const lastRunSnapshotRef = useRef<{
     rows: DiscontinuidadRow[];
@@ -147,9 +148,6 @@ export default function App() {
     const handleClickOutside = (e: MouseEvent) => {
       if (descargasRef.current && !descargasRef.current.contains(e.target as Node)) {
         setShowDescargas(false);
-      }
-      if (masOpcionesRef.current && !masOpcionesRef.current.contains(e.target as Node)) {
-        setShowMasOpciones(false);
       }
     };
     window.addEventListener('mousedown', handleClickOutside);
@@ -272,7 +270,6 @@ export default function App() {
       setFilename(ej.filename);
       setRows(ej.rows);
       setDescartadas(ej.descartadas);
-      setTiposConteo(ej.tipos_conteo);
       const initFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
       setFiltro(initFiltro);
 
@@ -402,7 +399,6 @@ export default function App() {
       setFilename(parsed.filename);
       setRows(parsed.rows);
       setDescartadas(parsed.descartadas);
-      setTiposConteo(parsed.tipos_conteo);
       const resetFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
       setFiltro(resetFiltro);
       await runAnalysis(parsed.rows, resetFiltro);
@@ -435,23 +431,18 @@ export default function App() {
     }
   };
 
-  const handleExport = async (tipo: 'excel' | 'png' | 'zip') => {
+  // Exportación: solo Excel (PNG y ZIP eliminados de la lógica por requerimiento)
+  const handleExport = async () => {
     if (!analisis) return;
-    setExporting(tipo);
+    setExporting('excel');
     setErrorMsg(null);
     try {
       await withAnalysisRetry(async (analysisId) => {
-        const { blob, filename: dlName } = await apiBlob(`/api/analisis/exportar/${tipo}`, {
+        const { blob, filename: dlName } = await apiBlob('/api/analisis/exportar/excel', {
           method: 'POST',
           body: JSON.stringify({ analysis_id: analysisId, vista, umbral, opciones }),
         });
-        const fallback =
-          tipo === 'excel'
-            ? 'analisis_cinematico.xlsx'
-            : tipo === 'png'
-              ? `estereograma_${vista}.png`
-              : 'resultados_cinematico.zip';
-        triggerDownload(blob, dlName || fallback);
+        triggerDownload(blob, dlName || 'analisis_cinematico.xlsx');
       });
     } finally {
       setExporting(null);
@@ -461,7 +452,6 @@ export default function App() {
   const handleClearData = () => {
     setRows([]);
     setDescartadas([]);
-    setTiposConteo({});
     setFilename('Sin archivo');
     setAnalisis(null);
     setFiguraSrc(null);
@@ -653,15 +643,15 @@ export default function App() {
               <span>Parámetros</span>
             </button>
           )}
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-300 bg-slate-50 hidden sm:flex items-center justify-center p-0.5 shadow-2xs shrink-0">
-            <svg width="32" height="32" viewBox="0 0 38 38" aria-hidden="true" fill="none">
-              <circle cx="19" cy="19" r="17" stroke="#18202A" strokeWidth="2" />
-              <path d="M2.5 19 C 8 27, 30 27, 35.5 19" stroke="#1F4E9C" strokeWidth="2" />
-              <circle cx="19" cy="9" r="2.2" fill="#D9622B" />
-              <circle cx="15" cy="11" r="2.2" fill="#D9622B" />
-              <circle cx="25" cy="27" r="1.8" fill="#9AA5B1" />
-            </svg>
-          </div>
+          {/*
+            Logo SVG anterior oculto; reemplazado por /logo-kinematix-icon.jpg natural sin contornos ni borde circular.
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ..."><svg .../></div>
+          */}
+          <img
+            src="/logo-kinematix-icon.jpg"
+            alt="Kinematix Check"
+            className="hidden sm:block h-10 md:h-11 w-auto object-contain select-none shrink-0"
+          />
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
               Análisis cinemático de taludes
@@ -674,327 +664,18 @@ export default function App() {
 
         {/* Botones de acción derecha con popovers */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
-          {/* Estereograma · más opciones */}
-          <div className="relative" ref={masOpcionesRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setShowMasOpciones((v) => !v);
-                setShowDescargas(false);
-              }}
-              className="px-2.5 sm:px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <span className="md:hidden">Más opciones</span>
-              <span className="hidden md:inline">Estereograma · más opciones</span>
-              {showMasOpciones ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
-            </button>
-
-            {showMasOpciones && (
-              <div className="fixed inset-x-3 top-[116px] sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-1 sm:w-80 max-h-[78vh] overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-xl p-3.5 z-50 text-xs text-slate-700 space-y-3">
-                <div className="font-semibold text-slate-800 pb-1.5 border-b border-slate-100 flex items-center justify-between">
-                  <span>Más opciones del estereograma</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowMasOpciones(false)}
-                    className="text-slate-400 hover:text-slate-600 font-bold text-sm"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Etiquetas y Red */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      Etiquetas
-                    </label>
-                    <select
-                      value={opciones.etiquetas}
-                      onChange={(e) =>
-                        setOpciones({
-                          ...opciones,
-                          etiquetas: e.target.value as 'grados' | 'cardinales' | 'ambos' | 'ninguna',
-                        })
-                      }
-                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
-                    >
-                      <option value="grados">Grados</option>
-                      <option value="cardinales">Cardinales</option>
-                      <option value="ambos">Ambos</option>
-                      <option value="ninguna">Ninguna</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      Ubicación leyenda
-                    </label>
-                    <select
-                      value={opciones.ubicacion_leyenda}
-                      onChange={(e) =>
-                        setOpciones({
-                          ...opciones,
-                          ubicacion_leyenda: e.target.value as 'derecha' | 'izquierda' | 'abajo' | 'ninguna',
-                        })
-                      }
-                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
-                    >
-                      <option value="derecha">Derecha</option>
-                      <option value="izquierda">Izquierda</option>
-                      <option value="abajo">Abajo</option>
-                      <option value="ninguna">Ninguna</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Espaciados y Grosores */}
-                <div className="grid grid-cols-2 gap-2">
-                  <NumberInput
-                    label="Espaciado de marcas (°)"
-                    value={opciones.espaciado_marcas ?? 10}
-                    min={1}
-                    max={45}
-                    step={1}
-                    onChange={(v) => setOpciones({ ...opciones, espaciado_marcas: v })}
-                  />
-                  <NumberInput
-                    label="Intervalo de la red (°)"
-                    value={opciones.intervalo_red ?? 10}
-                    min={2}
-                    max={30}
-                    step={1}
-                    onChange={(v) => setOpciones({ ...opciones, intervalo_red: v })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-1.5">
-                  <NumberInput
-                    label="Borde"
-                    value={opciones.ancho_borde ?? 3}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    help="Grosor del círculo exterior"
-                    onChange={(v) => setOpciones({ ...opciones, ancho_borde: v })}
-                  />
-                  <NumberInput
-                    label="Interno"
-                    value={opciones.ancho_interno ?? 1}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    help="Grosor de las líneas internas"
-                    onChange={(v) => setOpciones({ ...opciones, ancho_interno: v })}
-                  />
-                  <NumberInput
-                    label="Red"
-                    value={opciones.ancho_superposicion ?? 1}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    help="Grosor de la red"
-                    onChange={(v) => setOpciones({ ...opciones, ancho_superposicion: v })}
-                  />
-                </div>
-
-                {/* Filtros de planos e intersecciones */}
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      Planos dibujados
-                    </label>
-                    <select
-                      value={opciones.filtro_planos}
-                      onChange={(e) =>
-                        setOpciones({
-                          ...opciones,
-                          filtro_planos: e.target.value as 'criticos' | 'todos',
-                        })
-                      }
-                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
-                    >
-                      <option value="criticos">Solo críticos</option>
-                      <option value="todos">Todos</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      Intersecciones
-                    </label>
-                    <select
-                      value={opciones.filtro_intersecciones}
-                      onChange={(e) =>
-                        setOpciones({
-                          ...opciones,
-                          filtro_intersecciones: e.target.value as 'criticos' | 'todos',
-                        })
-                      }
-                      className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
-                    >
-                      <option value="criticos">Solo críticas</option>
-                      <option value="todos">Todas</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Escala de leyenda */}
-                <div>
-                  <div className="flex items-center justify-between mb-0.5">
-                    <label className="text-[11px] font-medium text-slate-600">
-                      Escala de leyenda (%)
-                    </label>
-                    <span className="font-mono text-xs text-slate-700">
-                      {opciones.escala_leyenda ?? 100}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={50}
-                    max={150}
-                    step={5}
-                    value={opciones.escala_leyenda ?? 100}
-                    onChange={(e) =>
-                      setOpciones({ ...opciones, escala_leyenda: Number(e.target.value) })
-                    }
-                    className="w-full accent-[#881337] h-1.5 cursor-pointer"
-                  />
-                </div>
-
-                {/* Casillas de verificación avanzadas */}
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 text-[11px]">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.marcas_exteriores ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, marcas_exteriores: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Marcas exteriores</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.circulo_perimetral ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, circulo_perimetral: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Círculo perimetral</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.cruz_central ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, cruz_central: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Cruz central</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.ejes_cruzados ?? false}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, ejes_cruzados: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Ejes cruzados</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.simbolo_por_tipo ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, simbolo_por_tipo: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Símbolo por tipo</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.etiqueta_filtro ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, etiqueta_filtro: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Etiqueta de filtro</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.caja_info ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, caja_info: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Cuadro de datos</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={opciones.titulo ?? true}
-                      onChange={(e) =>
-                        setOpciones({ ...opciones, titulo: e.target.checked })
-                      }
-                      className="rounded text-[#881337] focus:ring-[#881337]"
-                    />
-                    <span>Título</span>
-                  </label>
-                </div>
-
-                {/* Resolución al exportar (dpi) */}
-                <div className="pt-1 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <label className="text-[11px] font-medium text-slate-600">
-                      Resolución al exportar (dpi)
-                    </label>
-                    <span className="font-mono text-xs text-[#881337] font-semibold">
-                      {opciones.dpi_exportar ?? 300} dpi
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={3}
-                    step={1}
-                    value={(() => {
-                      const idx = [150, 200, 300, 600].indexOf(opciones.dpi_exportar ?? 300);
-                      return idx >= 0 ? idx : 2;
-                    })()}
-                    onChange={(e) => {
-                      const values = [150, 200, 300, 600];
-                      setOpciones({ ...opciones, dpi_exportar: values[Number(e.target.value)] });
-                    }}
-                    className="w-full accent-[#881337] h-1.5 cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400 font-mono px-0.5 mt-0.5">
-                    <span>150</span>
-                    <span>200</span>
-                    <span>300</span>
-                    <span>600</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Descargar resultados */}
+          {/*
+            OCULTO POR REQUERIMIENTO: menú "Estereograma · más opciones" oculto en UI.
+            Sus valores quedan fijos en DEFAULT_OPCIONES_PLOT (Grados, Derecha, espaciado 10, intervalo 10,
+            borde 3, interno 1, red 1, solo críticos, todos los checks activos menos ejes cruzados, escala leyenda 110%).
+            Resolución al exportar eliminada de la lógica. No reactivar este menú sin confirmación.
+          */}
+          {/* Descargar resultados (solo Preparar Excel) */}
           <div className="relative" ref={descargasRef}>
             <button
               type="button"
               onClick={() => {
                 setShowDescargas((v) => !v);
-                setShowMasOpciones(false);
               }}
               className="px-2.5 sm:px-3 py-1.5 border border-slate-300 hover:bg-slate-50 bg-white rounded text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
             >
@@ -1013,39 +694,13 @@ export default function App() {
                   type="button"
                   disabled={!analisis || exporting !== null}
                   onClick={() => {
-                    handleExport('excel');
+                    handleExport();
                     setShowDescargas(false);
                   }}
                   className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-700 shrink-0" />
                   <span>Preparar Excel</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!analisis || exporting !== null}
-                  onClick={() => {
-                    handleExport('zip');
-                    setShowDescargas(false);
-                  }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  <Archive className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>Preparar ZIP (Excel + PNG + CSV)</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!analisis || exporting !== null}
-                  onClick={() => {
-                    handleExport('png');
-                    setShowDescargas(false);
-                  }}
-                  className="w-full text-left px-3 py-1.5 hover:bg-slate-100 rounded border border-slate-200 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  <ImageIcon className="w-4 h-4 text-[#881337] shrink-0" />
-                  <span>Preparar PNG de la vista activa ({opciones.dpi_exportar ?? 300} dpi)</span>
                 </button>
               </div>
             )}
@@ -1060,50 +715,16 @@ export default function App() {
             <h2 className="text-xl font-bold text-slate-900 border-b border-slate-200 pb-2">
               Referencias
             </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Para la construcción de la aplicación se utilizó la siguiente bibliografía técnica:
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Para la construcción de la aplicación se utilizó la bibliografía técnica de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985), Rocscience Inc. (2012, s. f.) y Wyllie (2018). Realizado por el equipo de geotecnia A21, en conjunto con el trabajo de Gian Ticona, Jose Castillo Suni y Ana Tunquipa.
             </p>
-            <ul className="text-xs text-slate-700 space-y-3 leading-relaxed list-disc list-inside">
-              <li>
-                <strong>Diederichs, M. S. (1990).</strong> <em>DIPS: An interactive and graphical approach to the analysis of orientation based data</em> [Tesis de maestría, University of Toronto].
-              </li>
-              <li>
-                <strong>Hocking, G. (1976).</strong> A method for distinguishing between single and double plane sliding of tetrahedral wedges. <em>International Journal of Rock Mechanics and Mining Sciences & Geomechanics Abstracts, 13</em>(7), 225–226.
-              </li>
-              <li>
-                <strong>Hudson, J. A., & Harrison, J. P. (2000).</strong> <em>Engineering rock mechanics: An introduction to the principles</em>. Pergamon.
-              </li>
-              <li>
-                <strong>Kliche, C. A. (2019).</strong> <em>Rock slope stability</em> (2.ª ed.). Society for Mining, Metallurgy & Exploration.
-              </li>
-              <li>
-                <strong>Priest, S. D. (1985).</strong> <em>Hemispherical projection methods in rock mechanics</em>. George Allen & Unwin.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (s. f.-a).</strong> <em>Direct toppling</em>. Rocscience Documentation.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (s. f.-b).</strong> <em>Flexural toppling</em>. Rocscience Documentation.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (s. f.-c).</strong> <em>Kinematic analysis overview</em>. Rocscience Documentation.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (s. f.-d).</strong> <em>Planar sliding</em>. Rocscience Documentation.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (s. f.-e).</strong> <em>6 – Kinematic analysis tutorial</em>. Rocscience Documentation.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (s. f.-f).</strong> <em>Wedge sliding</em>. Rocscience Documentation.
-              </li>
-              <li>
-                <strong>Rocscience Inc. (2012).</strong> <em>Dips: Graphical and statistical analysis of orientation data. Verification manual</em>. Rocscience Inc.
-              </li>
-              <li>
-                <strong>Wyllie, D. C. (2018).</strong> <em>Rock slope engineering: Civil applications</em> (5.ª ed.). CRC Press.
-              </li>
-            </ul>
+            {/*
+              OCULTO POR REQUERIMIENTO: lista bibliográfica detallada reemplazada por el texto resumido arriba.
+              Conservar comentada por si se requiere consultar; no mostrar en UI.
+              <ul className="text-xs text-slate-700 space-y-3 leading-relaxed list-disc list-inside">
+                <li>Diederichs (1990)...</li>
+              </ul>
+            */}
           </div>
         </div>
       ) : (
@@ -1117,9 +738,6 @@ export default function App() {
             filename={filename}
             totalRows={rows.length}
             descartadasCount={descartadas.length}
-            tiposConteo={tiposConteo}
-            filtro={filtro}
-            onChangeFiltro={setFiltro}
             talud={talud}
             onChangeTalud={setTalud}
             parametros={parametros}
@@ -1160,7 +778,8 @@ export default function App() {
                     Resumen del análisis cinemático
                   </h3>
                   <div className="ac-contexto">
-                    Talud {analisis.contexto.buz}° / {String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = {analisis.contexto.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · {analisis.contexto.filtro ? analisis.contexto.filtro.split(' · N =')[0] : 'Sin filtro'}
+                    {/* OCULTO POR REQUERIMIENTO: se retiró "Sin filtro" del resumen (antes: · {analisis.contexto.filtro ? ... : 'Sin filtro'}) */}
+                    Talud {analisis.contexto.buz}° / {String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = {analisis.contexto.phi}° · {analisis.contexto.n_datos} discontinuidades · {analisis.contexto.n_intersecciones.toLocaleString()} intersecciones
                   </div>
 
                   {/* Veredicto HTML */}
@@ -1191,10 +810,10 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 2. Cuerpo: tarjetas (izquierda) + estereograma+notas (derecha) */}
+                {/* 2. Cuerpo: tarjetas (izquierda) + selector/estereograma (centro) + notas (derecha al nivel de las cards) */}
                 <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2.5 lg:gap-3 min-w-0">
                   {/* Columna Tarjetas Apiladas */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-2 lg:gap-1.5 shrink-0 w-full lg:w-[215px] xl:w-[220px] 2xl:w-[235px] p-1 lg:overflow-y-auto">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-2 lg:gap-1.5 shrink-0 w-full ${CHART_LAYOUT.cardsColumnClass} p-1 lg:overflow-y-auto`}>
                     {veredictosActivos.map((v) => {
                       const active = vista === v.clave;
                       const si = v.posible;
@@ -1278,7 +897,7 @@ export default function App() {
                     })}
                   </div>
 
-                  {/* Columna Estereograma + Notas (a la derecha) */}
+                  {/* Columna Central: Selector de vistas + Estereograma (Notas va como columna hermana al nivel superior) */}
                   <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
                     {/* Selector de vistas */}
                     <div className="flex flex-wrap md:flex-nowrap items-center justify-start gap-1 md:gap-0.5 xl:gap-1 p-0.5 bg-slate-100 rounded-lg border border-slate-200 max-w-full select-none shrink-0">
@@ -1300,43 +919,40 @@ export default function App() {
                       })}
                     </div>
 
-                    {/* Estereograma + Notas lado a lado */}
-                    <div className="flex-1 min-h-0 flex flex-col md:flex-row lg:flex-col xl:flex-row gap-2.5 min-w-0">
-                      {/* Contenedor del Estereograma */}
-                      <div className="relative flex-1 min-w-0 min-h-[260px] sm:min-h-[340px] lg:min-h-0 flex items-center justify-center p-1.5 bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
-                        {(running || redrawing) && (
-                          <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-900/85 text-white text-[11px] font-mono shadow flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                            <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
-                          </div>
-                        )}
-                        {figuraSrc ? (
-                          <img
-                            src={figuraSrc}
-                            alt={`Estereograma ${vista}`}
-                            className="w-full h-full max-h-[65vh] lg:max-h-full object-contain select-none"
-                          />
-                        ) : (
-                          <div className="text-xs text-slate-400 font-mono py-12">
-                            {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Notas de los resultados (rectángulo a la derecha ajustado a su contenido) */}
-                      <aside className="ac-notas shrink-0 md:w-[215px] lg:w-full xl:w-[225px] 2xl:w-[250px] md:self-start lg:self-auto xl:self-start flex flex-col">
-                        <div className="ac-notas-tit">Notas de los resultados</div>
-                        <ol>
-                          <li>
-                            El porcentaje crítico de discontinuidades corresponde a la fracción de polos o intersecciones que están dentro de la zona crítica. No corresponde a un factor de seguridad ni a una probabilidad de falla del mecanismo de rotura.
-                          </li>
-                          <li>
-                            En rotura planar y en cuña no se considera un plano igual al talud de análisis, debido a que no puede producir rotura planar ni formar cuñas críticas, porque no aflora y sus intersecciones generan bloques de volumen cero.
-                          </li>
-                        </ol>
-                      </aside>
+                    {/* Contenedor del Estereograma */}
+                    <div className={`relative flex-1 min-w-0 ${CHART_LAYOUT.chartContainerClass} flex items-center justify-center bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden`}>
+                      {(running || redrawing) && (
+                        <div className="absolute top-2 right-2 z-20 px-2 py-0.5 rounded bg-slate-900/85 text-white text-[11px] font-mono shadow flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                          <span>{running ? 'Calculando…' : 'Redibujando…'}</span>
+                        </div>
+                      )}
+                      {figuraSrc ? (
+                        <img
+                          src={figuraSrc}
+                          alt={`Estereograma ${vista}`}
+                          className={`w-full h-full ${CHART_LAYOUT.chartImageMaxHeightClass} object-contain select-none`}
+                        />
+                      ) : (
+                        <div className="text-xs text-slate-400 font-mono py-12">
+                          {running ? 'Generando estereograma…' : 'Sin gráfico disponible.'}
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* Notas de los resultados (alineadas al nivel de las cards, sin el selector de vistas encima) */}
+                  <aside className={`ac-notas shrink-0 w-full ${CHART_LAYOUT.notesColumnClass} md:self-start lg:self-start flex flex-col`}>
+                    <div className="ac-notas-tit">Notas de los resultados</div>
+                    <ol>
+                      <li>
+                        El porcentaje crítico de discontinuidades corresponde a la fracción de polos o intersecciones que están dentro de la zona crítica. No corresponde a un factor de seguridad ni a una probabilidad de falla del mecanismo de rotura.
+                      </li>
+                      <li>
+                        En rotura planar y en cuña no se considera un plano igual al talud de análisis, debido a que no puede producir rotura planar ni formar cuñas críticas, porque no aflora y sus intersecciones generan bloques de volumen cero.
+                      </li>
+                    </ol>
+                  </aside>
                 </div>
               </div>
             ) : (
@@ -1360,8 +976,9 @@ export default function App() {
                   ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${analisis.contexto.buz}°/${String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = ${analisis.contexto.phi}°`
                   : 'Sin datos'}
               </div>
+              {/* Resumen en barra inferior de las opciones ocultas de proyección, hemisferio, red, polos y leyenda */}
               <div className="shrink-0">
-                {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'}
+                {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'} · Red {opciones.red === 'ecuatorial' ? 'Ecuatorial' : opciones.red === 'polar' ? 'Polar' : 'Ninguna'} · Polos {opciones.tamano_polo} · Leyenda {opciones.escala_leyenda}%
               </div>
             </footer>
           </main>
@@ -1377,12 +994,6 @@ export default function App() {
             setRows(manualRows);
             setDescartadas([]);
             setFilename('Estructuras manuales');
-            const conteo: Record<string, number> = {};
-            for (const r of manualRows) {
-              const t = (r.Tipo || 'Sin tipo').toString().trim() || 'Sin tipo';
-              conteo[t] = (conteo[t] || 0) + 1;
-            }
-            setTiposConteo(conteo);
             setFiltro({ tipos: null, persistencia_min: 0 });
             setAnalisis(null);
             setFiguraSrc(null);
@@ -1404,12 +1015,6 @@ export default function App() {
             if (!filename || filename === 'Sin archivo') {
               setFilename('Estructuras manuales');
             }
-            const conteo: Record<string, number> = {};
-            for (const r of edited) {
-              const t = (r.Tipo || 'Sin tipo').toString().trim() || 'Sin tipo';
-              conteo[t] = (conteo[t] || 0) + 1;
-            }
-            setTiposConteo(conteo);
             const resetFiltro: FiltroParams = { tipos: null, persistencia_min: 0 };
             setFiltro(resetFiltro);
             setShowEditor(false);

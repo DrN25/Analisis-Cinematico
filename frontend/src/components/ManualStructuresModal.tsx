@@ -9,7 +9,6 @@ const INITIAL_EMPTY_ROWS = 1;
 interface ManualRow {
   buz: string;
   dirbuz: string;
-  tipo: string;
 }
 
 interface Props {
@@ -18,16 +17,16 @@ interface Props {
   onSaveStructures: (rows: DiscontinuidadRow[]) => void;
 }
 
-const emptyRow = (): ManualRow => ({ buz: '', dirbuz: '', tipo: '' });
+const emptyRow = (): ManualRow => ({ buz: '', dirbuz: '' });
 
 function isRowFilled(r: ManualRow): boolean {
-  return r.buz.trim() !== '' || r.dirbuz.trim() !== '' || r.tipo.trim() !== '';
+  return r.buz.trim() !== '' || r.dirbuz.trim() !== '';
 }
 
 function getRowError(r: ManualRow): string | null {
   if (!isRowFilled(r)) return null;
-  if (r.buz.trim() === '' || r.dirbuz.trim() === '' || r.tipo.trim() === '') {
-    return 'Completa Dip, DipDir y Tipo de estructura';
+  if (r.buz.trim() === '' || r.dirbuz.trim() === '') {
+    return 'Completa Dip y DipDir';
   }
   const buz = Number(r.buz.replace(',', '.'));
   const dir = Number(r.dirbuz.replace(',', '.'));
@@ -50,7 +49,6 @@ export const ManualStructuresModal: React.FC<Props> = ({
       return initialRows.slice(0, MAX_ROWS).map((r) => ({
         buz: String(r.Buz ?? ''),
         dirbuz: String(r.DirBuz ?? ''),
-        tipo: String(r.Tipo ?? ''),
       }));
     }
     return Array.from({ length: INITIAL_EMPTY_ROWS }, emptyRow);
@@ -99,7 +97,6 @@ export const ManualStructuresModal: React.FC<Props> = ({
         next[targetIdx] = {
           buz: cols[0] ?? '',
           dirbuz: cols[1] ?? '',
-          tipo: cols[2] ?? '',
         };
       });
       return next.slice(0, MAX_ROWS);
@@ -117,10 +114,10 @@ export const ManualStructuresModal: React.FC<Props> = ({
       const rawDir = Number(r.dirbuz.replace(',', '.'));
       const dirbuz = rawDir === 360 ? 0 : rawDir;
       return {
-        ID: `D${String(i + 1).padStart(3, '0')}`,
+        ID: `P${i + 1}`,
         Buz: buz,
         DirBuz: dirbuz,
-        Tipo: r.tipo.trim() || 'Sin tipo',
+        Tipo: 'Sin tipo',
         Persistencia: '',
       };
     });
@@ -133,7 +130,8 @@ export const ManualStructuresModal: React.FC<Props> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3.5 border-b border-slate-200">
           <div>
             <h2 className="font-display font-semibold text-base text-slate-900">
-              Agregar estructuras
+              {/* Título simplificado a "Agregar" (antes "Agregar estructuras") */}
+              Agregar
             </h2>
             <p className="text-[11px] text-slate-500">
               Ingresa manualmente hasta {MAX_ROWS} filas (puedes pegar columnas desde Excel).
@@ -168,9 +166,6 @@ export const ManualStructuresModal: React.FC<Props> = ({
                   <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">
                     DipDir (0-360°)
                   </th>
-                  <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2.5 py-2 text-left">
-                    Tipo de estructura
-                  </th>
                   <th className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 px-2 py-2 w-10" />
                 </tr>
               </thead>
@@ -185,7 +180,7 @@ export const ManualStructuresModal: React.FC<Props> = ({
                       <td className="px-2.5 py-1 text-slate-400 border-b border-slate-100 font-mono">
                         {idx + 1}
                       </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
+                      <td className="px-1.5 py-1 border-b border-slate-100 align-top">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -194,12 +189,12 @@ export const ManualStructuresModal: React.FC<Props> = ({
                           placeholder="0 - 90"
                           value={row.buz}
                           onChange={(e) => updateCell(idx, 'buz', e.target.value)}
-                          onKeyDown={(e) => handleTableArrowKey(e, idx, 0, draft.length, 3, tbodyRef.current)}
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 0, draft.length, 2, tbodyRef.current)}
                           onPaste={(e) => handlePaste(e, idx)}
                           className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
                         />
                       </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
+                      <td className="px-1.5 py-1 border-b border-slate-100 align-top">
                         <input
                           type="text"
                           inputMode="decimal"
@@ -208,22 +203,9 @@ export const ManualStructuresModal: React.FC<Props> = ({
                           placeholder="0 - 360"
                           value={row.dirbuz}
                           onChange={(e) => updateCell(idx, 'dirbuz', e.target.value)}
-                          onKeyDown={(e) => handleTableArrowKey(e, idx, 1, draft.length, 3, tbodyRef.current)}
+                          onKeyDown={(e) => handleTableArrowKey(e, idx, 1, draft.length, 2, tbodyRef.current)}
                           onPaste={(e) => handlePaste(e, idx)}
                           className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337] font-mono tabular-nums"
-                        />
-                      </td>
-                      <td className="px-1.5 py-1 border-b border-slate-100">
-                        <input
-                          type="text"
-                          data-row={idx}
-                          data-col={2}
-                          placeholder="Ej. Cizalla, Falla..."
-                          value={row.tipo}
-                          onChange={(e) => updateCell(idx, 'tipo', e.target.value)}
-                          onKeyDown={(e) => handleTableArrowKey(e, idx, 2, draft.length, 3, tbodyRef.current)}
-                          onPaste={(e) => handlePaste(e, idx)}
-                          className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-[#881337]"
                         />
                         {err && (
                           <div className="text-[10px] text-rose-700 mt-0.5 font-medium">

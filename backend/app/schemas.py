@@ -152,7 +152,7 @@ class OpcionesPlotIn(BaseModel):
     ancho_borde: float = Field(default=3.0, ge=0.0, le=10.0)
     ancho_interno: float = Field(default=1.0, ge=0.0, le=10.0)
     ancho_superposicion: float = Field(default=1.0, ge=0.0, le=10.0)
-    escala_leyenda: float = Field(default=100.0, ge=50.0, le=150.0)
+    escala_leyenda: float = Field(default=110.0, ge=50.0, le=150.0)
     ubicacion_leyenda: Literal["derecha", "izquierda", "abajo", "ninguna"] = "derecha"
     etiqueta_filtro: bool = True
     red: Literal["ecuatorial", "polar", "ninguna"] = "ecuatorial"
@@ -166,7 +166,7 @@ class OpcionesPlotIn(BaseModel):
     simbolo_por_tipo: bool = True
     tamano_por_persistencia: bool = True
     tamano_simbolo: float = 30.0
-    tamano_polo: float = 10.0
+    tamano_polo: float = 12.0
     contornos_general: bool = True
     contornos_en_mecanismos: bool = True
     mapa_color: str = "YlOrRd"
@@ -174,7 +174,7 @@ class OpcionesPlotIn(BaseModel):
     titulo: bool = True
     caja_info: bool = True
     mostrar_proyeccion: bool = True
-    tamano_figura: float = 6.0
+    tamano_figura: float = 6.8
     tamano_fuente: float = 9.0
     resolucion: int = 201
     dpi_pantalla: int = 110

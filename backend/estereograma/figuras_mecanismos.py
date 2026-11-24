@@ -78,25 +78,37 @@ def figura_general(res, op):
         cb.set_label(f"{res.parametros.metodo_densidad} · máx {d.max():.1f} %", fontsize=fs - 1.5)
         cb.ax.tick_params(labelsize=fs - 2)
     paleta, polos, inters, planos = colormaps["tab10"], [], [], []
-    varios = len(ctx["tipos"]) > 1
+    # OCULTO POR REQUERIMIENTO: se oculta la diferenciación y leyenda por tipo de estructura en el diagrama general.
+    # varios = len(ctx["tipos"]) > 1
     if "intersecciones" in m:
         inter = res.intersecciones
         puntos(ax, op, inter.Trend, inter.Plunge, "0.15", "o", 9, z=4.5, ec="none")
         inters = [H("Intersección", "0.15")]
-    for i, tipo in enumerate(ctx["tipos"]):
-        s, col = datos[datos.Tipo == tipo], paleta(i % 10)
-        if "planos" in m:
-            for b, dd in zip(s.Buz, s.DirBuz):
-                trazar_lineas(ax, op, lineas_circulo_maximo(b, dd), color=col, lw=0.8, zorder=3)
-        if "polos" in m:
-            puntos(ax, op, *polo_de_plano(s.Buz, s.DirBuz), col, marcador(tipo, op, ctx),
-                   tamanos(s.Clase_P, op, op.tamano_polo), z=4, lw=0.5 if op.tamano_polo >= 12 else 0.25)
-            polos.append(Line2D([], [], ls="", color=col, marker=marcador(tipo, op, ctx), mfc=col, mec="k", ms=7,
-                                label=f"Polo · {tipo}" if varios else "Polo"))
-        if "planos" in m:
-            planos.append(L(col, f"Plano · {tipo}" if varios else "Plano", lw=1.2))
+    # for i, tipo in enumerate(ctx["tipos"]):
+    #     s, col = datos[datos.Tipo == tipo], paleta(i % 10)
+    #     if "planos" in m:
+    #         for b, dd in zip(s.Buz, s.DirBuz):
+    #             trazar_lineas(ax, op, lineas_circulo_maximo(b, dd), color=col, lw=0.8, zorder=3)
+    #     if "polos" in m:
+    #         puntos(ax, op, *polo_de_plano(s.Buz, s.DirBuz), col, marcador(tipo, op, ctx),
+    #                tamanos(s.Clase_P, op, op.tamano_polo), z=4, lw=0.5 if op.tamano_polo >= 12 else 0.25)
+    #         polos.append(Line2D([], [], ls="", color=col, marker=marcador(tipo, op, ctx), mfc=col, mec="k", ms=7,
+    #                             label=f"Polo · {tipo}" if varios else "Polo"))
+    #     if "planos" in m:
+    #         planos.append(L(col, f"Plano · {tipo}" if varios else "Plano", lw=1.2))
+    col_general = paleta(0)
+    if "planos" in m:
+        for b, dd in zip(datos.Buz, datos.DirBuz):
+            trazar_lineas(ax, op, lineas_circulo_maximo(b, dd), color=col_general, lw=0.8, zorder=3)
+        planos = [L(col_general, "Planos", lw=1.2)]
+    if "polos" in m:
+        puntos(ax, op, *polo_de_plano(datos.Buz, datos.DirBuz), col_general, "o",
+               tamanos(datos.Clase_P, op, op.tamano_polo), z=4, lw=0.5 if op.tamano_polo >= 12 else 0.25)
+        polos = [Line2D([], [], ls="", color=col_general, marker="o", mfc=col_general, mec="k", ms=7, label="Polos")]
     if "polos" in m and op.etiquetas_polos == "todos" and len(datos) <= MAX_ETIQUETAS:
-        etiquetar(ax, op, *polo_de_plano(datos.Buz, datos.DirBuz), datos.ID)
+        # OCULTO POR REQUERIMIENTO: usar P1..Pn en lugar de prefijos estructurales (J1-01, F1-01, etc.)
+        # etiquetar(ax, op, *polo_de_plano(datos.Buz, datos.DirBuz), datos.ID)
+        etiquetar(ax, op, *polo_de_plano(datos.Buz, datos.DirBuz), [f"P{idx + 1}" for idx in range(len(datos))])
     trazar_lineas(ax, op, lineas_circulo_maximo(res.talud.buz, res.talud.dirbuz), color=op.colores["talud"], lw=1.8, zorder=5)
     leyenda(ax, op, polos, [], inters, planos)
     return fig

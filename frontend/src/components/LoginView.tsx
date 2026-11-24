@@ -52,6 +52,14 @@ export const LoginView: React.FC<Props> = ({ onSuccess }) => {
 
         {/* Cuerpo del diálogo */}
         <div className="p-6">
+          <div className="flex justify-center mb-4">
+            <img
+              src="/logo-kinematix.jpg"
+              alt="Kinematix Check · Análisis cinemático de taludes"
+              className="h-24 w-auto object-contain select-none"
+            />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
