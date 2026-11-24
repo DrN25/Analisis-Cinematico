@@ -232,15 +232,15 @@ def test_mobile_refresh_token_y_revocacion(api_env):
     assert created.status_code == 201
     uid = created.json()["usuario_id"]
 
-    # Login con client="mobile" emite access de 24h (86400s) + refresh_token
+    # Login con client="mobile" emite access de 7 días (604800s) + refresh_token de 30 días
     login_res = client.post(
         "/api/auth/login",
         json={"username_or_email": "FIELD1", "password": "CampoPass1!", "client": "mobile"},
     )
     assert login_res.status_code == 200
     data = login_res.json()
-    assert data["expires_in_seconds"] == 86400
-    assert data["refresh_expires_in_seconds"] >= 86400 * 7
+    assert data["expires_in_seconds"] == 604800
+    assert data["refresh_expires_in_seconds"] >= 86400 * 30
     access_1 = data["access_token"]
     refresh_1 = data["refresh_token"]
     assert refresh_1
