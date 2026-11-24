@@ -173,7 +173,8 @@ class OpcionesPlotIn(BaseModel):
     mapa_color_mecanismos: Literal["Blues", "Greens", "Purples", "Greys"] = "Blues"
     titulo: bool = True
     caja_info: bool = True
-    mostrar_proyeccion: bool = True
+    # OCULTO POR REQUERIMIENTO: no mostrar texto "Estereograma equiareal..." debajo del gráfico.
+    mostrar_proyeccion: bool = False
     tamano_figura: float = 6.8
     tamano_fuente: float = 9.0
     resolucion: int = 201

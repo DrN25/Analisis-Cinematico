@@ -630,13 +630,13 @@ export default function App() {
       </nav>
 
       {/* 2. ENCABEZADO DE LA APLICACIÓN */}
-      <header className="min-h-12 shrink-0 bg-white border-b border-slate-200 px-3 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 select-none">
+      <header className="min-h-12 shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 flex items-center justify-between gap-2 select-none">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {activeTab === 'analisis' && (
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden px-2.5 py-1.5 border border-[#881337]/30 bg-rose-50/70 hover:bg-rose-100/70 text-[#881337] rounded text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors"
+              className="lg:hidden px-2 sm:px-2.5 py-1.5 border border-[#881337]/30 bg-rose-50/70 hover:bg-rose-100/70 text-[#881337] rounded text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
               aria-label="Abrir opciones y parámetros de análisis"
             >
               <Sliders className="w-3.5 h-3.5" />
@@ -644,22 +644,18 @@ export default function App() {
             </button>
           )}
           {/*
-            Logo SVG anterior oculto; reemplazado por /logo-kinematix-icon.jpg natural sin contornos ni borde circular.
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ..."><svg .../></div>
+            Logo anterior (/logo-kinematix-icon.jpg) y textos de cabecera ocultos porque el nuevo logo horizontal
+            (/logo-kinematix-header.jpg) ya integra "Kinematix Check · Análisis cinemático de taludes".
+            <div className="min-w-0">
+              <h1>Análisis cinemático de taludes</h1>
+              <p>Rotura planar · cuña · toppling flexural · toppling directo</p>
+            </div>
           */}
           <img
-            src="/logo-kinematix-icon.jpg"
-            alt="Kinematix Check"
-            className="hidden sm:block h-10 md:h-11 w-auto object-contain select-none shrink-0"
+            src="/logo-kinematix-header.jpg"
+            alt="Kinematix Check · Análisis cinemático de taludes"
+            className="h-8 sm:h-14 md:h-16 w-auto max-w-[148px] sm:max-w-none object-contain object-left select-none shrink"
           />
-          <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
-              Análisis cinemático de taludes
-            </h1>
-            <p className="text-[11px] text-slate-500 leading-tight hidden sm:block truncate">
-              Rotura planar · cuña · toppling flexural · toppling directo
-            </p>
-          </div>
         </div>
 
         {/* Botones de acción derecha con popovers */}
@@ -716,7 +712,7 @@ export default function App() {
               Referencias
             </h2>
             <p className="text-sm text-slate-700 leading-relaxed">
-              Para la construcción de la aplicación se utilizó la bibliografía técnica de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985), Rocscience Inc. (2012, s. f.) y Wyllie (2018). Realizado por el equipo de geotecnia A21, en conjunto con el trabajo de Gian Ticona, Jose Castillo Suni y Ana Tunquipa.
+              Para la construcción de la aplicación se utilizó la bibliografía técnica de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985), Rocscience Inc. (2012, s. f.) y Wyllie (2018). Desarrollado por el Equipo de Geotecnia A21, integrado por Gian Ticona, Jose Castillo Suni y Ana Tunquipa.
             </p>
             {/*
               OCULTO POR REQUERIMIENTO: lista bibliográfica detallada reemplazada por el texto resumido arriba.
@@ -976,10 +972,12 @@ export default function App() {
                   ? `${analisis.contexto.n_datos} discontinuidades · ${analisis.contexto.n_intersecciones.toLocaleString()} intersecciones · Talud ${analisis.contexto.buz}°/${String(analisis.contexto.dirbuz).padStart(3, '0')}° · φ = ${analisis.contexto.phi}°`
                   : 'Sin datos'}
               </div>
-              {/* Resumen en barra inferior de las opciones ocultas de proyección, hemisferio, red, polos y leyenda */}
-              <div className="shrink-0">
-                {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio {opciones.hemisferio === 'inferior' ? 'Inferior' : 'Superior'} · Red {opciones.red === 'ecuatorial' ? 'Ecuatorial' : opciones.red === 'polar' ? 'Polar' : 'Ninguna'} · Polos {opciones.tamano_polo} · Leyenda {opciones.escala_leyenda}%
-              </div>
+              {/*
+                OCULTO POR REQUERIMIENTO: quitar resumen "Schmidt (Equiárea) · ... · Leyenda 110%" de la barra inferior.
+                <div className="shrink-0">
+                  {opciones.proyeccion === 'equiarea' ? 'Schmidt (Equiárea)' : 'Wulff (Equiángulo)'} · Hemisferio ... · Leyenda {opciones.escala_leyenda}%
+                </div>
+              */}
             </footer>
           </main>
         </div>

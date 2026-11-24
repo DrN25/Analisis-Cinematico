@@ -164,7 +164,8 @@ export const DEFAULT_OPCIONES_PLOT: OpcionesPlot = {
   mapa_color_mecanismos: 'Blues',
   titulo: true,
   caja_info: true,
-  mostrar_proyeccion: true,
+  // OCULTO POR REQUERIMIENTO: ocultar texto "Estereograma equiareal - Ecuatorial - Hemisferio inferior" bajo el gráfico.
+  mostrar_proyeccion: false,
   tamano_figura: 6.8,
   tamano_fuente: 9,
   resolucion: 201,

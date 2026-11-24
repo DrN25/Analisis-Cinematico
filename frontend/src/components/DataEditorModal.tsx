@@ -87,7 +87,7 @@ export const DataEditorModal: React.FC<Props> = ({
                   tab === 'validas' ? 'bg-white text-[#881337] shadow-sm' : 'text-slate-600'
                 }`}
               >
-                Tabla editable ({draft.length}/{MAX_ROWS})
+                Tabla editable ({draft.length})
               </button>
               <button
                 type="button"
@@ -214,13 +214,12 @@ export const DataEditorModal: React.FC<Props> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-slate-700 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Añadir fila ({draft.length}/{MAX_ROWS})
+                Añadir fila
               </button>
-              {draft.length >= MAX_ROWS && (
-                <span className="text-[11px] font-medium text-amber-700">
-                  Máximo {MAX_ROWS} filas permitidas
-                </span>
-              )}
+              {/*
+                OCULTO POR REQUERIMIENTO: ocultar referencia visible a máximo de 50 filas (la validación MAX_ROWS sigue activa).
+                {draft.length >= MAX_ROWS && <span>Máximo {MAX_ROWS} filas permitidas</span>}
+              */}
             </div>
           ) : (
             <div />

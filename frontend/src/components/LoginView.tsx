@@ -39,24 +39,24 @@ export const LoginView: React.FC<Props> = ({ onSuccess }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#E5E9EE] px-4 select-none">
       {/* Ventana de diálogo estilo escritorio */}
-      <div className="w-full max-w-[360px] bg-white border border-slate-300 rounded shadow-lg overflow-hidden">
+      <div className="w-full max-w-[440px] bg-white border border-slate-300 rounded shadow-lg overflow-hidden">
         {/* Barra de título de la ventana */}
         <div className="h-8 bg-slate-800 text-slate-200 px-3 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <Lock className="w-3.5 h-3.5 text-rose-300" />
             <span className="font-semibold text-[11px] tracking-wide text-white">
-              Iniciar sesión · Análisis Cinemático
+              Iniciar sesión · KinematixCheck
             </span>
           </div>
         </div>
 
         {/* Cuerpo del diálogo */}
         <div className="p-6">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-5">
             <img
               src="/logo-kinematix.jpg"
-              alt="Kinematix Check · Análisis cinemático de taludes"
-              className="h-24 w-auto object-contain select-none"
+              alt="KinematixCheck · Análisis cinemático de taludes"
+              className="h-48 sm:h-52 w-auto object-contain select-none"
             />
           </div>
 

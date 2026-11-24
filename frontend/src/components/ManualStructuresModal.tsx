@@ -134,12 +134,12 @@ export const ManualStructuresModal: React.FC<Props> = ({
               Agregar
             </h2>
             <p className="text-[11px] text-slate-500">
-              Ingresa manualmente hasta {MAX_ROWS} filas (puedes pegar columnas desde Excel).
+              Ingresa manualmente las filas (puedes pegar columnas desde Excel).
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
-              {draft.length}/{MAX_ROWS} filas
+              {draft.length} {draft.length === 1 ? 'fila' : 'filas'}
             </span>
             <button
               type="button"
@@ -240,13 +240,12 @@ export const ManualStructuresModal: React.FC<Props> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-slate-700 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              Añadir fila ({draft.length}/{MAX_ROWS})
+              Añadir fila
             </button>
-            {draft.length >= MAX_ROWS && (
-              <span className="text-[11px] font-medium text-amber-700">
-                Máximo {MAX_ROWS} filas permitidas
-              </span>
-            )}
+            {/*
+              OCULTO POR REQUERIMIENTO: ocultar referencia visible a máximo de 50 filas (la validación MAX_ROWS sigue activa).
+              {draft.length >= MAX_ROWS && <span>Máximo {MAX_ROWS} filas permitidas</span>}
+            */}
           </div>
 
           <div className="flex items-center gap-2">

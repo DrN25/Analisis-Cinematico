@@ -188,15 +188,15 @@ export const LeftSidebar: React.FC<Props> = ({
 
       {/* 2 · Opciones del estereograma */}
       <TreeGroup title="2 · Opciones del estereograma" defaultOpen={true}>
-        {/* OCULTO POR REQUERIMIENTO: se retiró "Más opciones en el menú superior." porque ese menú está oculto. */}
-        <p className="text-[10.5px] text-slate-500 italic pb-0.5">
-          Solo cambian el dibujo; no recalculan el análisis.
-        </p>
+        {/*
+          OCULTO POR REQUERIMIENTO: se retiraron "Más opciones en el menú superior." y
+          "Solo cambian el dibujo; no recalculan el análisis." de la UI.
+        */}
 
         {/*
           OCULTO POR REQUERIMIENTO: "Tamaño de los polos" (fijo en 12), "Proyección" (Equiárea),
-          "Hemisferio" (Inferior) y "Red" (Ecuatorial) no se muestran en UI pero siguen activos en DEFAULT_OPCIONES_PLOT
-          y visibles como resumen en la barra inferior. No reactivar estos controles en UI sin confirmación.
+          "Hemisferio" (Inferior) y "Red" (Ecuatorial) no se muestran en UI pero siguen activos en DEFAULT_OPCIONES_PLOT.
+          No reactivar estos controles en UI sin confirmación.
 
           <div>Tamaño de los polos (fijo en 12)</div>
           <div>Proyección (Equiárea - Schmidt)</div>
@@ -209,7 +209,9 @@ export const LeftSidebar: React.FC<Props> = ({
           <div className="flex items-center justify-between">
             <label className={`${labelCls} flex items-center gap-1`}>
               <span>Color de los contornos</span>
+              {/* OCULTO POR REQUERIMIENTO: interrogación (?) quitada de Color de los contornos.
               <HelpTooltip text="Paleta de los contornos de densidad de polos en todas las vistas; distinta del rojo y naranja de las zonas críticas." />
+              */}
             </label>
           </div>
           <select
@@ -265,25 +267,16 @@ export const LeftSidebar: React.FC<Props> = ({
             </div>
           */}
 
-          <div className="flex items-center justify-between">
-            <label
-              className={`flex items-center gap-1.5 text-xs ${totalRows > 0 && totalRows < 50
-                ? 'text-slate-700 cursor-pointer'
-                : 'text-slate-400 cursor-not-allowed'
-                }`}
-            >
-              <input
-                type="checkbox"
-                disabled={totalRows <= 0 || totalRows >= 50}
-                checked={opciones.etiquetas_polos === 'todos' && totalRows > 0 && totalRows < 50}
-                onChange={(e) =>
-                  setOpt('etiquetas_polos', e.target.checked ? 'todos' : 'ninguno')
-                }
-                className="accent-[#881337] rounded"
-              />
-              <span>Etiquetas de los polos (ID)</span>
-            </label>
-          </div>
+          {/*
+            OCULTO POR REQUERIMIENTO: opción "Etiquetas de los polos (ID)" oculta en UI;
+            su lógica permanece intacta en DEFAULT_OPCIONES_PLOT y backend.
+            <div className="flex items-center justify-between">
+              <label ...>
+                <input type="checkbox" ... />
+                <span>Etiquetas de los polos (ID)</span>
+              </label>
+            </div>
+          */}
         </div>
       </TreeGroup>
 
