@@ -24,12 +24,30 @@ jobs:
           password: ${{ secrets.DO_PASSWORD }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
+            set -euo pipefail
             echo "--> Desplegando nueva versión en DigitalOcean..."
             cd /var/www/Analisis-Cinematico
+            df -h /
             git fetch origin main
             git reset --hard origin/main
             docker compose build backend
-            docker compose up -d backend caddy
-            sleep 3
-            docker compose ps
-            curl -s http://127.0.0.1:8002/api/health
+            if ! docker compose up -d backend caddy; then
+              echo "ERROR al levantar los contenedores:"
+              docker compose ps -a
+              docker compose logs --tail=60 backend || true
+              exit 1
+            fi
+            docker image prune -f >/dev/null 2>&1 || true
+            docker builder prune -f --filter "until=24h" >/dev/null 2>&1 || true
+            for i in $(seq 1 10); do
+              if curl -sf http://127.0.0.1:8002/api/health; then
+                echo ""
+                docker compose ps
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "ERROR: backend no respondió en /api/health"
+            docker compose ps -a
+            docker compose logs --tail=60 backend || true
+            exit 1
