@@ -714,7 +714,7 @@ export default function App() {
               Referencias
             </h2>
             <p className="text-sm text-slate-700 leading-relaxed">
-              Para la construcción de la aplicación se utilizó la bibliografía técnica de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985), Rocscience Inc. (2012, s. f.) y Wyllie (2018). Desarrollado por el Equipo de Geotecnia A21, integrado por Gian Ticona, Jose Castillo Suni y Ana Tunquipa.
+              Para la construcción de la aplicación se utilizó la bibliografía técnica de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985) y Wyllie (2018). Desarrollado por el Equipo de Geotecnia A21, integrado por Gian Ticona, José Castillo Suni y Ana Tunquipa.
             </p>
             {/*
               OCULTO POR REQUERIMIENTO: lista bibliográfica detallada reemplazada por el texto resumido arriba.
