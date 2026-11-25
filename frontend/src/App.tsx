@@ -575,12 +575,13 @@ export default function App() {
           <button
             type="button"
             onClick={() => setActiveTab('referencias')}
-            className={`px-2.5 sm:px-3 py-1 rounded text-xs transition-colors cursor-pointer ${activeTab === 'referencias'
+            className={`px-2.5 sm:px-3 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer ${activeTab === 'referencias'
               ? 'bg-white text-slate-900 shadow-xs border border-slate-300 font-bold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 font-medium'
               }`}
           >
-            Referencias
+            <span className="sm:hidden">Acerca de</span>
+            <span className="hidden sm:inline">Acerca de Kinematix Check</span>
           </button>
         </div>
 
@@ -706,15 +707,18 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3. VISTA PRINCIPAL O REFERENCIAS */}
+      {/* 3. VISTA PRINCIPAL O ACERCA DE KINEMATIX CHECK */}
       {activeTab === 'referencias' ? (
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
           <div className="max-w-4xl mx-auto bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-4">
             <h2 className="text-xl font-bold text-slate-900 border-b border-slate-200 pb-2">
-              Referencias
+              Acerca de Kinematix Check
             </h2>
             <p className="text-sm text-slate-700 leading-relaxed">
-              Para la construcción de la aplicación se utilizó la bibliografía técnica de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985), Rocscience Inc. (2012, s. f.) y Wyllie (2018). Desarrollado por el Equipo de Geotecnia A21, integrado por Gian Ticona, Jose Castillo Suni y Ana Tunquipa.
+              Talud Kinematix Check es una herramienta de apoyo para el análisis cinemático preliminar de taludes en roca. Evalúa la posibilidad geométrica de rotura planar, en cuña y por toppling. El porcentaje crítico de discontinuidades no corresponde a un factor de seguridad ni a una probabilidad de falla. Por ello, los resultados deben ser revisados por un profesional responsable antes de cualquier decisión de diseño u operación.
+            </p>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Esta aplicación se basa en la bibliografía técnica especializada de Diederichs (1990), Hocking (1976), Hudson y Harrison (2000), Kliche (2019), Priest (1985) y Wyllie (2018). Su desarrollo e implementación fueron realizados por el Equipo de Geotecnia A21, integrado por Gian Ticona, José Castillo Suni y Ana Tunquipa.
             </p>
             {/*
               OCULTO POR REQUERIMIENTO: lista bibliográfica detallada reemplazada por el texto resumido arriba.
